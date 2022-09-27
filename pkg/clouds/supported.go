@@ -34,6 +34,9 @@ func SupportedClouds() []kops.CloudProviderID {
 	if featureflag.Hetzner.Enabled() {
 		clouds = append(clouds, kops.CloudProviderHetzner)
 	}
+	if featureflag.Yandex.Enabled() {
+		clouds = append(clouds, kops.CloudProviderYandex)
+	}
 
 	return clouds
 }

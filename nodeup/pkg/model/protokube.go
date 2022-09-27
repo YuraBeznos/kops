@@ -310,6 +310,10 @@ func (t *ProtokubeBuilder) buildEnvFile() (*nodetasks.File, error) {
 		envVars["AZURE_STORAGE_ACCOUNT"] = os.Getenv("AZURE_STORAGE_ACCOUNT")
 	}
 
+	if os.Getenv("YANDEX_CLOUD_CREDENTIAL_FILE") != "" {
+		envVars["YANDEX_CLOUD_CREDENTIAL_FILE"] = os.Getenv("YANDEX_CLOUD_CREDENTIAL_FILE")
+	}
+
 	for _, envVar := range proxy.GetProxyEnvVars(t.Cluster.Spec.EgressProxy) {
 		envVars[envVar.Name] = envVar.Value
 	}

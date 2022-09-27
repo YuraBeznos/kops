@@ -212,6 +212,13 @@ func (b *BootstrapScript) buildEnvironmentVariables(cluster *kops.Cluster) (map[
 		}
 	}
 
+	if cluster.Spec.GetCloudProvider() == kops.CloudProviderYandex {
+		yandexcloudCredentialFile := os.Getenv("YANDEX_CLOUD_CREDENTIAL_FILE")
+		if yandexcloudCredentialFile != "" {
+			env["YANDEX_CLOUD_CREDENTIAL_FILE"] = yandexcloudCredentialFile
+		}
+	}
+
 	return env, nil
 }
 

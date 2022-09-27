@@ -174,6 +174,10 @@ func (tf *TemplateFunctions) AddTo(dest template.FuncMap, secretStore fi.SecretS
 		return os.Getenv("HCLOUD_TOKEN")
 	}
 
+	dest["YANDEX_CLOUD_CREDENTIAL_FILE"] = func() string {
+		return os.Getenv("YANDEX_CLOUD_CREDENTIAL_FILE")
+	}
+
 	if featureflag.Spotinst.Enabled() {
 		if creds, err := spotinst.LoadCredentials(); err == nil {
 			dest["SpotinstToken"] = func() string { return creds.Token }

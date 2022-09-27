@@ -92,6 +92,8 @@ var (
 	ImageDigest = new("ImageDigest", Bool(true))
 	// Hetzner toggles the Hetzner Cloud support.
 	Hetzner = new("Hetzner", Bool(false))
+	// Yandex toggles the Yandex Cloud support.
+	Yandex = new("Yandex", Bool(false))
 )
 
 // FeatureFlag defines a feature flag

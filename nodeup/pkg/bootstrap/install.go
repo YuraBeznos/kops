@@ -153,6 +153,10 @@ func (i *Installation) buildEnvFile() *nodetasks.File {
 		envVars["AZURE_STORAGE_ACCOUNT"] = os.Getenv("AZURE_STORAGE_ACCOUNT")
 	}
 
+	if os.Getenv("YANDEX_CLOUD_CREDENTIAL_FILE") != "" {
+		envVars["YANDEX_CLOUD_CREDENTIAL_FILE"] = os.Getenv("YANDEX_CLOUD_CREDENTIAL_FILE")
+	}
+
 	sysconfig := ""
 	for key, value := range envVars {
 		sysconfig += key + "=" + value + "\n"

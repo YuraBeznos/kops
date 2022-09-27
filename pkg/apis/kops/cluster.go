@@ -241,6 +241,8 @@ type CloudProviderSpec struct {
 	Hetzner *HetznerSpec `json:"hetzner,omitempty"`
 	// Openstack configures the Openstack cloud provider.
 	Openstack *OpenstackSpec `json:"openstack,omitempty"`
+	// Yandex configures the Yandex cloud provider.
+	Yandex *YandexSpec `json:"yandex,omitempty"`
 }
 
 // AWSSpec configures the AWS cloud provider.
@@ -257,6 +259,10 @@ type GCESpec struct {
 
 // HetznerSpec configures the Hetzner cloud provider.
 type HetznerSpec struct {
+}
+
+// YandexSpec configures the Yandex cloud provider.
+type YandexSpec struct {
 }
 
 type KarpenterConfig struct {
@@ -911,6 +917,8 @@ func (c *ClusterSpec) GetCloudProvider() CloudProviderID {
 		return CloudProviderHetzner
 	} else if c.CloudProvider.Openstack != nil {
 		return CloudProviderOpenstack
+	} else if c.CloudProvider.Yandex != nil {
+		return CloudProviderYandex
 	}
 	return ""
 }

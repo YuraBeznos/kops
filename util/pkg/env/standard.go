@@ -72,6 +72,9 @@ func BuildSystemComponentEnvVars(spec *kops.ClusterSpec) EnvVars {
 	// Azure related values.
 	vars.addEnvVariableIfExist("AZURE_STORAGE_ACCOUNT")
 
+	// Yandex Cloud related values.
+	vars.addEnvVariableIfExist("YANDEX_CLOUD_CREDENTIAL_FILE")
+
 	return vars
 }
 
