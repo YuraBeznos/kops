@@ -66,8 +66,10 @@ type yandexCloudImplementation struct {
 	region string
 }
 
-/* s3-kops-iam.json
-→ yc iam key create --service-account-name s3-kops --output s3-kops-iam.json
+/*
+	kops-iam.json
+
+→ yc iam key create --service-account-name s3-kops --output kops-iam.json
 json has everything which is required
 */
 var (
