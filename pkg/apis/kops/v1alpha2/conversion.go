@@ -98,6 +98,8 @@ func Convert_v1alpha2_ClusterSpec_To_kops_ClusterSpec(in *ClusterSpec, out *kops
 				return err
 			}
 		}
+	case kops.CloudProviderScaleway:
+		out.CloudProvider.Scaleway = &kops.ScalewaySpec{}
 	case kops.CloudProviderYandex:
 		out.CloudProvider.Yandex = &kops.YandexSpec{}
 	case "":
@@ -109,6 +111,8 @@ func Convert_v1alpha2_ClusterSpec_To_kops_ClusterSpec(in *ClusterSpec, out *kops
 			string(kops.CloudProviderAWS),
 			string(kops.CloudProviderHetzner),
 			string(kops.CloudProviderOpenstack),
+			string(kops.CloudProviderScaleway),
+			string(kops.CloudProviderYandex),
 		})
 	}
 	if in.TagSubnets != nil {

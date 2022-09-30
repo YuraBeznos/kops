@@ -6,7 +6,7 @@ spec:
   addons:
   - id: k8s-1.16
     manifest: kops-controller.addons.k8s.io/k8s-1.16.yaml
-    manifestHash: 35321bd0c6a5198b618f3bc43c24c0b4ac920412b21ce8030e2e7f0c492e36f0
+    manifestHash: e3a98d2ebe01ef07bdd5ee16ca94dde8ce7768f674b3cbce1d8f44b5948a59c9
     name: kops-controller.addons.k8s.io
     needsRollingUpdate: control-plane
     selector:
@@ -41,7 +41,7 @@ spec:
     version: 9.99.0
   - id: k8s-1.12
     manifest: dns-controller.addons.k8s.io/k8s-1.12.yaml
-    manifestHash: d834063a35175e89baed51161341a11b9351ab41385dcc1bea98a199410e6094
+    manifestHash: 6c8f01b2470d323965dfb22d410f322e0b429f7acc3831f41a763ec072dfc69b
     name: dns-controller.addons.k8s.io
     selector:
       k8s-addon: dns-controller.addons.k8s.io
@@ -53,23 +53,65 @@ spec:
     selector:
       k8s-addon: storage-aws.addons.k8s.io
     version: 9.99.0
-  - id: k8s-1.22
-    manifest: networking.projectcalico.org/k8s-1.22.yaml
-    manifestHash: c0608fb886a1ad8b3db3be4c901b048f1e8f4e99b40f30d7cdaaf645b6e396a7
+  - id: k8s-1.25
+    manifest: networking.projectcalico.org/k8s-1.25.yaml
+    manifestHash: 10ae7870ba4c9c3a9e8bf353173ad73fbe2667fa89f9444ad7d97bb6d30dec5b
     name: networking.projectcalico.org
+    prune:
+      kinds:
+      - kind: ConfigMap
+        labelSelector: addon.kops.k8s.io/name=networking.projectcalico.org,app.kubernetes.io/managed-by=kops
+        namespaces:
+        - kube-system
+      - kind: Service
+        labelSelector: addon.kops.k8s.io/name=networking.projectcalico.org,app.kubernetes.io/managed-by=kops
+      - kind: ServiceAccount
+        labelSelector: addon.kops.k8s.io/name=networking.projectcalico.org,app.kubernetes.io/managed-by=kops
+        namespaces:
+        - kube-system
+      - group: apps
+        kind: DaemonSet
+        labelSelector: addon.kops.k8s.io/name=networking.projectcalico.org,app.kubernetes.io/managed-by=kops
+        namespaces:
+        - kube-system
+      - group: apps
+        kind: Deployment
+        labelSelector: addon.kops.k8s.io/name=networking.projectcalico.org,app.kubernetes.io/managed-by=kops
+        namespaces:
+        - kube-system
+      - group: apps
+        kind: StatefulSet
+        labelSelector: addon.kops.k8s.io/name=networking.projectcalico.org,app.kubernetes.io/managed-by=kops
+      - group: policy
+        kind: PodDisruptionBudget
+        labelSelector: addon.kops.k8s.io/name=networking.projectcalico.org,app.kubernetes.io/managed-by=kops
+        namespaces:
+        - kube-system
+      - group: rbac.authorization.k8s.io
+        kind: ClusterRole
+        labelSelector: addon.kops.k8s.io/name=networking.projectcalico.org,app.kubernetes.io/managed-by=kops
+      - group: rbac.authorization.k8s.io
+        kind: ClusterRoleBinding
+        labelSelector: addon.kops.k8s.io/name=networking.projectcalico.org,app.kubernetes.io/managed-by=kops
+      - group: rbac.authorization.k8s.io
+        kind: Role
+        labelSelector: addon.kops.k8s.io/name=networking.projectcalico.org,app.kubernetes.io/managed-by=kops
+      - group: rbac.authorization.k8s.io
+        kind: RoleBinding
+        labelSelector: addon.kops.k8s.io/name=networking.projectcalico.org,app.kubernetes.io/managed-by=kops
     selector:
       role.kubernetes.io/networking: "1"
     version: 9.99.0
   - id: k8s-1.18
     manifest: aws-cloud-controller.addons.k8s.io/k8s-1.18.yaml
-    manifestHash: f8fd8d170f77a75cd976d77cbd9c9773e05bea0daf79d2a61486bcecd2354070
+    manifestHash: 9021b3edac0a7bdf0aa5c97e8cad8dc673453d05f561f1a5abbfbc1d49e65b12
     name: aws-cloud-controller.addons.k8s.io
     selector:
       k8s-addon: aws-cloud-controller.addons.k8s.io
     version: 9.99.0
   - id: k8s-1.17
     manifest: aws-ebs-csi-driver.addons.k8s.io/k8s-1.17.yaml
-    manifestHash: 97b59907e1d2a06001bb591d976ae86c97da2ae50eadd510f3911c9aebd7fc1a
+    manifestHash: 853e9f4d87a245ea71d91f89d38b23b295b7c7375df57c0094697093dbc89d00
     name: aws-ebs-csi-driver.addons.k8s.io
     selector:
       k8s-addon: aws-ebs-csi-driver.addons.k8s.io

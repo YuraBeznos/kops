@@ -38,11 +38,11 @@ nav:
   - Getting Started:
     - Installing: "getting_started/install.md"
     - Deploying to AWS: "getting_started/aws.md"
-    - Deploying to GCE - Alpha: "getting_started/gce.md"
-    - Deploying to OpenStack - Beta: "getting_started/openstack.md"
+    - Deploying to GCE: "getting_started/gce.md"
     - Deploying to Digital Ocean - Beta: "getting_started/digitalocean.md"
+    - Deploying to Hetzner - Beta: "getting_started/hetzner.md"
+    - Deploying to OpenStack - Beta: "getting_started/openstack.md"
     - Deploying to Azure - Alpha: "getting_started/azure.md"
-    - Deploying to Hetzner - Alpha: "getting_started/hetzner.md"
     - Deploying to Spot Ocean - Alpha: "getting_started/spot-ocean.md"
     - kOps Commands: "getting_started/commands.md"
     - kOps Arguments: "getting_started/arguments.md"
@@ -153,6 +153,7 @@ nav:
     - Ports: "contributing/ports.md"
     - Cluster Addons & Manager : "contributing/addons.md"
   - Releases:
+    - "1.25": releases/1.25-NOTES.md
     - "1.24": releases/1.24-NOTES.md
     - "1.23": releases/1.23-NOTES.md
     - "1.22": releases/1.22-NOTES.md

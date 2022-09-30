@@ -67,7 +67,7 @@ spec:
     - https://127.0.0.1:4001
     etcdServersOverrides:
     - /events#https://127.0.0.1:4002
-    image: registry.k8s.io/kube-apiserver:v1.20.0
+    image: registry.k8s.io/kube-apiserver:v1.21.0
     kubeletPreferredAddressTypes:
     - InternalIP
     - Hostname
@@ -93,7 +93,7 @@ spec:
     clusterCIDR: 100.96.0.0/11
     clusterName: nthsqsresources.longclustername.example.com
     configureCloudRoutes: false
-    image: registry.k8s.io/kube-controller-manager:v1.20.0
+    image: registry.k8s.io/kube-controller-manager:v1.21.0
     leaderElection:
       leaderElect: true
     logLevel: 2
@@ -108,17 +108,17 @@ spec:
     nodeLocalDNS:
       cpuRequest: 25m
       enabled: false
-      image: registry.k8s.io/dns/k8s-dns-node-cache:1.21.3
+      image: registry.k8s.io/dns/k8s-dns-node-cache:1.22.8
       memoryRequest: 5Mi
     provider: CoreDNS
     serverIP: 100.64.0.10
   kubeProxy:
     clusterCIDR: 100.96.0.0/11
     cpuRequest: 100m
-    image: registry.k8s.io/kube-proxy:v1.20.0
+    image: registry.k8s.io/kube-proxy:v1.21.0
     logLevel: 2
   kubeScheduler:
-    image: registry.k8s.io/kube-scheduler:v1.20.0
+    image: registry.k8s.io/kube-scheduler:v1.21.0
     leaderElection:
       leaderElect: true
     logLevel: 2
@@ -136,9 +136,11 @@ spec:
     networkPluginName: cni
     podInfraContainerImage: registry.k8s.io/pause:3.6
     podManifestPath: /etc/kubernetes/manifests
+    shutdownGracePeriod: 30s
+    shutdownGracePeriodCriticalPods: 10s
   kubernetesApiAccess:
   - 0.0.0.0/0
-  kubernetesVersion: 1.20.0
+  kubernetesVersion: 1.21.0
   masterInternalName: api.internal.nthsqsresources.longclustername.example.com
   masterKubelet:
     anonymousAuth: false
@@ -155,6 +157,8 @@ spec:
     podInfraContainerImage: registry.k8s.io/pause:3.6
     podManifestPath: /etc/kubernetes/manifests
     registerSchedulable: false
+    shutdownGracePeriod: 30s
+    shutdownGracePeriodCriticalPods: 10s
   masterPublicName: api.nthsqsresources.longclustername.example.com
   networkCIDR: 172.20.0.0/16
   networking:
@@ -171,7 +175,7 @@ spec:
     managedASGTag: aws-node-termination-handler/managed
     memoryRequest: 64Mi
     prometheusEnable: false
-    version: v1.16.5
+    version: v1.17.1
   nonMasqueradeCIDR: 100.64.0.0/10
   podCIDR: 100.96.0.0/11
   secretStore: memfs://clusters.example.com/nthsqsresources.longclustername.example.com/secrets

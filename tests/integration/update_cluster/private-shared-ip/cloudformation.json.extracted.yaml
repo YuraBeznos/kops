@@ -1,4 +1,3 @@
-Resources.AWSEC2LaunchTemplatebastionprivatesharedipexamplecom.Properties.LaunchTemplateData.UserData: ""
 Resources.AWSEC2LaunchTemplatemasterustest1amastersprivatesharedipexamplecom.Properties.LaunchTemplateData.UserData: |
   #!/bin/bash
   set -o errexit
@@ -246,7 +245,7 @@ Resources.AWSEC2LaunchTemplatemasterustest1amastersprivatesharedipexamplecom.Pro
   ConfigBase: memfs://clusters.example.com/private-shared-ip.example.com
   InstanceGroupName: master-us-test-1a
   InstanceGroupRole: Master
-  NodeupConfigHash: 7G+MLDSsVg/OqvtphhrnOerDecLr/dfjfhFN5PfZ4f8=
+  NodeupConfigHash: /QQ+EsYZkveuMia2Nh4Ok9+WNbllcn0QB5ZhNqRpCds=
 
   __EOF_KUBE_ENV
 

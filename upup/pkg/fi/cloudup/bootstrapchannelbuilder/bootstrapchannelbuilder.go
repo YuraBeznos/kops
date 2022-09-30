@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 
 	channelsapi "k8s.io/kops/channels/pkg/api"
@@ -33,6 +34,7 @@ import (
 	"k8s.io/kops/pkg/model/components/addonmanifests/awscloudcontrollermanager"
 	"k8s.io/kops/pkg/model/components/addonmanifests/awsebscsidriver"
 	"k8s.io/kops/pkg/model/components/addonmanifests/awsloadbalancercontroller"
+	"k8s.io/kops/pkg/model/components/addonmanifests/certmanager"
 	"k8s.io/kops/pkg/model/components/addonmanifests/clusterautoscaler"
 	"k8s.io/kops/pkg/model/components/addonmanifests/dnscontroller"
 	"k8s.io/kops/pkg/model/components/addonmanifests/externaldns"
@@ -98,7 +100,7 @@ func NewBootstrapChannelBuilder(modelContext *model.KopsModelContext,
 
 // Build is responsible for adding the addons to the channel
 func (b *BootstrapChannelBuilder) Build(c *fi.ModelBuilderContext) error {
-	addons, err := b.buildAddons(c)
+	addons, serviceAccounts, err := b.buildAddons(c)
 	if err != nil {
 		return err
 	}
@@ -128,7 +130,7 @@ func (b *BootstrapChannelBuilder) Build(c *fi.ModelBuilderContext) error {
 		}
 
 		// Go through any transforms that are best expressed as code
-		remapped, err := addonmanifests.RemapAddonManifest(a.Spec, b.KopsModelContext, b.assetBuilder, manifestBytes)
+		remapped, err := addonmanifests.RemapAddonManifest(a.Spec, b.KopsModelContext, b.assetBuilder, manifestBytes, serviceAccounts)
 		if err != nil {
 			klog.Infof("invalid manifest: %s", string(manifestBytes))
 			return fmt.Errorf("error remapping manifest %s: %v", manifestPath, err)
@@ -178,7 +180,7 @@ func (b *BootstrapChannelBuilder) Build(c *fi.ModelBuilderContext) error {
 			manifestPath := "addons/" + *a.Spec.Manifest
 
 			// Go through any transforms that are best expressed as code
-			manifestBytes, err := addonmanifests.RemapAddonManifest(&a.Spec, b.KopsModelContext, b.assetBuilder, a.Manifest)
+			manifestBytes, err := addonmanifests.RemapAddonManifest(&a.Spec, b.KopsModelContext, b.assetBuilder, a.Manifest, serviceAccounts)
 			if err != nil {
 				klog.Infof("invalid manifest: %s", string(a.Manifest))
 				return fmt.Errorf("error remapping manifest %s: %v", manifestPath, err)
@@ -209,7 +211,26 @@ func (b *BootstrapChannelBuilder) Build(c *fi.ModelBuilderContext) error {
 		}
 	}
 
+	// Not all objects in ClusterAddons should be applied to the cluster - although most should.
+	// However, there are a handful of well-known exceptions:
+	// e.g. configuration objects which are instead configured via files on the nodes.
+	var applyAdditionalObjectsToCluster kubemanifest.ObjectList
 	if b.ClusterAddons != nil {
+		for _, addon := range b.ClusterAddons {
+			applyToCluster := true
+
+			switch addon.GroupVersionKind().GroupKind() {
+			case schema.GroupKind{Group: "kubescheduler.config.k8s.io", Kind: "KubeSchedulerConfiguration"}:
+				applyToCluster = false
+			}
+
+			if applyToCluster {
+				applyAdditionalObjectsToCluster = append(applyAdditionalObjectsToCluster, addon)
+			}
+		}
+	}
+
+	if len(applyAdditionalObjectsToCluster) != 0 {
 		key := "cluster-addons.kops.k8s.io"
 		location := key + "/default.yaml"
 
@@ -222,7 +243,7 @@ func (b *BootstrapChannelBuilder) Build(c *fi.ModelBuilderContext) error {
 		name := b.Cluster.ObjectMeta.Name + "-addons-" + key
 		manifestPath := "addons/" + *a.Manifest
 
-		manifestBytes, err := b.ClusterAddons.ToYAML()
+		manifestBytes, err := applyAdditionalObjectsToCluster.ToYAML()
 		if err != nil {
 			return fmt.Errorf("error serializing addons: %v", err)
 		}
@@ -303,7 +324,7 @@ type Addon struct {
 	BuildPrune bool
 }
 
-func (b *BootstrapChannelBuilder) buildAddons(c *fi.ModelBuilderContext) (*AddonList, error) {
+func (b *BootstrapChannelBuilder) buildAddons(c *fi.ModelBuilderContext) (*AddonList, map[string]iam.Subject, error) {
 	addons := &AddonList{}
 
 	serviceAccountRoles := []iam.Subject{}
@@ -582,6 +603,10 @@ func (b *BootstrapChannelBuilder) buildAddons(c *fi.ModelBuilderContext) (*Addon
 					Id:       id,
 				})
 			}
+		}
+
+		if len(b.Cluster.Spec.CertManager.HostedZoneIDs) > 0 {
+			serviceAccountRoles = append(serviceAccountRoles, &certmanager.ServiceAccount{})
 		}
 	}
 
@@ -886,68 +911,106 @@ func (b *BootstrapChannelBuilder) buildAddons(c *fi.ModelBuilderContext) (*Addon
 	if b.Cluster.Spec.Networking.Flannel != nil {
 		key := "networking.flannel"
 
-		{
-			location := key + "/k8s-1.12.yaml"
-			id := "k8s-1.12"
+		if b.IsKubernetesGTE("v1.25.0") {
+			id := "k8s-1.25"
+			location := key + "/" + id + ".yaml"
 
-			addons.Add(&channelsapi.AddonSpec{
+			addon := addons.Add(&channelsapi.AddonSpec{
 				Name:     fi.String(key),
 				Selector: networkingSelector(),
 				Manifest: fi.String(location),
 				Id:       id,
 			})
+			addon.BuildPrune = true
+		} else {
+			id := "k8s-1.12"
+			location := key + "/" + id + ".yaml"
+
+			addon := addons.Add(&channelsapi.AddonSpec{
+				Name:     fi.String(key),
+				Selector: networkingSelector(),
+				Manifest: fi.String(location),
+				Id:       id,
+			})
+			addon.BuildPrune = true
 		}
 	}
 
 	if b.Cluster.Spec.Networking.Calico != nil {
 		key := "networking.projectcalico.org"
 
-		if b.IsKubernetesGTE("v1.22.0") {
-			id := "k8s-1.22"
+		if b.IsKubernetesGTE("v1.25.0") {
+			id := "k8s-1.25"
 			location := key + "/" + id + ".yaml"
 
-			addons.Add(&channelsapi.AddonSpec{
+			addon := addons.Add(&channelsapi.AddonSpec{
 				Name:     fi.String(key),
 				Selector: networkingSelector(),
 				Manifest: fi.String(location),
 				Id:       id,
 			})
+			addon.BuildPrune = true
+		} else if b.IsKubernetesGTE("v1.22.0") {
+			id := "k8s-1.22"
+			location := key + "/" + id + ".yaml"
+
+			addon := addons.Add(&channelsapi.AddonSpec{
+				Name:     fi.String(key),
+				Selector: networkingSelector(),
+				Manifest: fi.String(location),
+				Id:       id,
+			})
+			addon.BuildPrune = true
 		} else {
 			id := "k8s-1.16"
 			location := key + "/" + id + ".yaml"
 
-			addons.Add(&channelsapi.AddonSpec{
+			addon := addons.Add(&channelsapi.AddonSpec{
 				Name:     fi.String(key),
 				Selector: networkingSelector(),
 				Manifest: fi.String(location),
 				Id:       id,
 			})
+			addon.BuildPrune = true
 		}
 	}
 
 	if b.Cluster.Spec.Networking.Canal != nil {
 		key := "networking.projectcalico.org.canal"
 
-		if b.IsKubernetesGTE("v1.22.0") {
-			id := "k8s-1.22"
+		if b.IsKubernetesGTE("v1.25.0") {
+			id := "k8s-1.25"
 			location := key + "/" + id + ".yaml"
 
-			addons.Add(&channelsapi.AddonSpec{
+			addon := addons.Add(&channelsapi.AddonSpec{
 				Name:     fi.String(key),
 				Selector: networkingSelector(),
 				Manifest: fi.String(location),
 				Id:       id,
 			})
+			addon.BuildPrune = true
+		} else if b.IsKubernetesGTE("v1.22.0") {
+			id := "k8s-1.22"
+			location := key + "/" + id + ".yaml"
+
+			addon := addons.Add(&channelsapi.AddonSpec{
+				Name:     fi.String(key),
+				Selector: networkingSelector(),
+				Manifest: fi.String(location),
+				Id:       id,
+			})
+			addon.BuildPrune = true
 		} else {
 			id := "k8s-1.16"
 			location := key + "/" + id + ".yaml"
 
-			addons.Add(&channelsapi.AddonSpec{
+			addon := addons.Add(&channelsapi.AddonSpec{
 				Name:     fi.String(key),
 				Selector: networkingSelector(),
 				Manifest: fi.String(location),
 				Id:       id,
 			})
+			addon.BuildPrune = true
 		}
 	}
 
@@ -991,7 +1054,7 @@ func (b *BootstrapChannelBuilder) buildAddons(c *fi.ModelBuilderContext) (*Addon
 
 	err := addCiliumAddon(b, addons)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add cilium addon: %w", err)
+		return nil, nil, fmt.Errorf("failed to add cilium addon: %w", err)
 	}
 
 	authenticationSelector := map[string]string{"role.kubernetes.io/authentication": "1"}
@@ -1082,7 +1145,9 @@ func (b *BootstrapChannelBuilder) buildAddons(c *fi.ModelBuilderContext) (*Addon
 				serviceAccountRoles = append(serviceAccountRoles, &awscloudcontrollermanager.ServiceAccount{})
 			}
 		}
-		if b.Cluster.Spec.CloudConfig != nil && b.Cluster.Spec.CloudConfig.AWSEBSCSIDriver != nil && fi.BoolValue(b.Cluster.Spec.CloudConfig.AWSEBSCSIDriver.Enabled) {
+		if b.Cluster.Spec.CloudConfig != nil && b.Cluster.Spec.CloudConfig.AWSEBSCSIDriver != nil &&
+			fi.BoolValue(b.Cluster.Spec.CloudConfig.AWSEBSCSIDriver.Enabled) &&
+			(b.Cluster.Spec.CloudConfig.AWSEBSCSIDriver.Managed == nil || fi.BoolValue(b.Cluster.Spec.CloudConfig.AWSEBSCSIDriver.Managed)) {
 			key := "aws-ebs-csi-driver.addons.k8s.io"
 
 			{
@@ -1101,7 +1166,7 @@ func (b *BootstrapChannelBuilder) buildAddons(c *fi.ModelBuilderContext) (*Addon
 		}
 	}
 
-	if b.IsKubernetesGTE("1.20") && b.Cluster.Spec.SnapshotController != nil && fi.BoolValue(b.Cluster.Spec.SnapshotController.Enabled) {
+	if b.Cluster.Spec.SnapshotController != nil && fi.BoolValue(b.Cluster.Spec.SnapshotController.Enabled) {
 		key := "snapshot-controller.addons.k8s.io"
 
 		{
@@ -1146,6 +1211,8 @@ func (b *BootstrapChannelBuilder) buildAddons(c *fi.ModelBuilderContext) (*Addon
 		})
 	}
 
+	serviceAccounts := make(map[string]iam.Subject)
+
 	if b.Cluster.Spec.GetCloudProvider() == kops.CloudProviderAWS && b.Cluster.Spec.KubeAPIServer.ServiceAccountIssuer != nil {
 		awsModelContext := &awsmodel.AWSModelContext{
 			KopsModelContext: b.KopsModelContext,
@@ -1156,9 +1223,11 @@ func (b *BootstrapChannelBuilder) buildAddons(c *fi.ModelBuilderContext) (*Addon
 
 			_, err := iamModelBuilder.BuildServiceAccountRoleTasks(serviceAccountRole, c)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
+			sa, _ := serviceAccountRole.ServiceAccount()
+			serviceAccounts[sa.Name] = serviceAccountRole
 		}
 	}
-	return addons, nil
+	return addons, serviceAccounts, nil
 }

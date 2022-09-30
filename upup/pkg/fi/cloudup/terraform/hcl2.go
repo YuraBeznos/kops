@@ -112,6 +112,42 @@ func writeLiteral(body *hclwrite.Body, key string, literal *terraformWriter.Lite
 			},
 		}
 		body.SetAttributeRaw(key, tokens)
+	} else if literal.Index {
+		tokens := hclwrite.Tokens{
+			{
+				Type:  hclsyntax.TokenOQuote,
+				Bytes: []byte(`"`),
+			},
+			{
+				Type:  hclsyntax.TokenQuotedLit,
+				Bytes: []byte(literal.Value),
+			},
+			{
+				Type:  hclsyntax.TokenQuotedLit,
+				Bytes: []byte(`-`),
+			},
+			{
+				Type:  hclsyntax.TokenTemplateInterp,
+				Bytes: []byte(`${`),
+			},
+			{
+				Type:  hclsyntax.TokenQuotedLit,
+				Bytes: []byte(`count.index`),
+			},
+			{
+				Type:  hclsyntax.TokenTemplateSeqEnd,
+				Bytes: []byte(`}`),
+			},
+			{
+				Type:  hclsyntax.TokenCQuote,
+				Bytes: []byte(`"`),
+			},
+			{
+				Type:  hclsyntax.TokenEOF,
+				Bytes: []byte{},
+			},
+		}
+		body.SetAttributeRaw(key, tokens)
 	} else if len(literal.Tokens) == 0 {
 		body.SetAttributeValue(key, cty.StringVal(literal.Value))
 	} else {
@@ -169,10 +205,11 @@ func writeLiteralList(body *hclwrite.Body, key string, literals []*terraformWrit
 
 // writeMap writes a map's key-value pairs to a body spready across multiple lines.
 // Example:
-// key = {
-//   "key1" = "value1"
-//   "key2" = "value2"
-// }
+//
+//	key = {
+//	  "key1" = "value1"
+//	  "key2" = "value2"
+//	}
 //
 // The HCL2 library does not support this natively. See https://github.com/hashicorp/hcl/issues/356
 func writeMap(body *hclwrite.Body, key string, values map[string]cty.Value) {

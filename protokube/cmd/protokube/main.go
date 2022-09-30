@@ -140,6 +140,15 @@ func run() error {
 			os.Exit(1)
 		}
 		cloudProvider = azureVolumes
+
+	} else if cloud == "scaleway" {
+		scwCloudProvider, err := protokube.NewScwCloudProvider()
+		if err != nil {
+			klog.Errorf("Error initializing Scaleway: %q", err)
+			os.Exit(1)
+		}
+		cloudProvider = scwCloudProvider
+
 	} else if cloud == "yandex" {
 		yandexCloudProvider, err := protokube.NewYandexCloudProvider()
 		if err != nil {

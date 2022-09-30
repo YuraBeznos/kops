@@ -773,18 +773,18 @@ resource "aws_s3_object" "kops-version-txt" {
   server_side_encryption = "AES256"
 }
 
-resource "aws_s3_object" "manifests-etcdmanager-events" {
+resource "aws_s3_object" "manifests-etcdmanager-events-master-us-test-1a" {
   bucket                 = "testingBucket"
-  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-events_content")
-  key                    = "clusters.example.com/privatecilium.example.com/manifests/etcd/events.yaml"
+  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-events-master-us-test-1a_content")
+  key                    = "clusters.example.com/privatecilium.example.com/manifests/etcd/events-master-us-test-1a.yaml"
   provider               = aws.files
   server_side_encryption = "AES256"
 }
 
-resource "aws_s3_object" "manifests-etcdmanager-main" {
+resource "aws_s3_object" "manifests-etcdmanager-main-master-us-test-1a" {
   bucket                 = "testingBucket"
-  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-main_content")
-  key                    = "clusters.example.com/privatecilium.example.com/manifests/etcd/main.yaml"
+  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-main-master-us-test-1a_content")
+  key                    = "clusters.example.com/privatecilium.example.com/manifests/etcd/main-master-us-test-1a.yaml"
   provider               = aws.files
   server_side_encryption = "AES256"
 }
@@ -1189,6 +1189,8 @@ resource "aws_subnet" "us-test-1a-privatecilium-example-com" {
     "KubernetesCluster"                               = "privatecilium.example.com"
     "Name"                                            = "us-test-1a.privatecilium.example.com"
     "SubnetType"                                      = "Private"
+    "kops.k8s.io/instance-group/master-us-test-1a"    = "true"
+    "kops.k8s.io/instance-group/nodes"                = "true"
     "kubernetes.io/cluster/privatecilium.example.com" = "owned"
     "kubernetes.io/role/internal-elb"                 = "1"
   }
@@ -1204,6 +1206,7 @@ resource "aws_subnet" "utility-us-test-1a-privatecilium-example-com" {
     "KubernetesCluster"                               = "privatecilium.example.com"
     "Name"                                            = "utility-us-test-1a.privatecilium.example.com"
     "SubnetType"                                      = "Utility"
+    "kops.k8s.io/instance-group/bastion"              = "true"
     "kubernetes.io/cluster/privatecilium.example.com" = "owned"
     "kubernetes.io/role/elb"                          = "1"
   }

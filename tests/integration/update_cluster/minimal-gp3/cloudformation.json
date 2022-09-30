@@ -782,6 +782,14 @@
             "Value": "Public"
           },
           {
+            "Key": "kops.k8s.io/instance-group/master-us-test-1a",
+            "Value": "true"
+          },
+          {
+            "Key": "kops.k8s.io/instance-group/nodes",
+            "Value": "true"
+          },
+          {
             "Key": "kubernetes.io/cluster/minimal.example.com",
             "Value": "owned"
           },
@@ -1116,6 +1124,7 @@
                 "autoscaling:DescribeAutoScalingGroups",
                 "autoscaling:DescribeAutoScalingInstances",
                 "autoscaling:DescribeLaunchConfigurations",
+                "autoscaling:DescribeScalingActivities",
                 "autoscaling:DescribeTags",
                 "ec2:AttachVolume",
                 "ec2:AuthorizeSecurityGroupIngress",
@@ -1142,12 +1151,14 @@
                 "elasticloadbalancing:AddTags",
                 "elasticloadbalancing:CreateListener",
                 "elasticloadbalancing:CreateTargetGroup",
+                "elasticloadbalancing:DeleteListener",
                 "elasticloadbalancing:DescribeListeners",
                 "elasticloadbalancing:DescribeLoadBalancerAttributes",
                 "elasticloadbalancing:DescribeLoadBalancerPolicies",
                 "elasticloadbalancing:DescribeLoadBalancers",
                 "elasticloadbalancing:DescribeTargetGroups",
                 "elasticloadbalancing:DescribeTargetHealth",
+                "elasticloadbalancing:ModifyListener",
                 "elasticloadbalancing:RegisterTargets",
                 "iam:GetServerCertificate",
                 "iam:ListServerCertificates",

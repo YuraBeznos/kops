@@ -292,6 +292,12 @@ spec:
                   enabled:
                     description: 'Enabled enables the cert manager. Default: false'
                     type: boolean
+                  hostedZoneIDs:
+                    description: HostedZoneIDs is a list of route53 hostedzone IDs
+                      that cert-manager will be allowed to do dns-01 validation for
+                    items:
+                      type: string
+                    type: array
                   image:
                     description: 'Image is the docker container used. Default: the
                       latest supported image for the specified kubernetes version.'
@@ -321,6 +327,11 @@ spec:
                       enabled:
                         description: 'Enabled enables the AWS EBS CSI driver Default:
                           false'
+                        type: boolean
+                      managed:
+                        description: Managed controls if aws-ebs-csi-driver is manged
+                          and deployed by kOps. The deployment of aws-ebs-csi-driver
+                          is skipped if this is set to false.
                         type: boolean
                       podAnnotations:
                         additionalProperties:
@@ -479,6 +490,16 @@ spec:
                             items:
                               type: string
                             type: array
+                          internalNetworkNames:
+                            items:
+                              type: string
+                            type: array
+                          ipv6SupportDisabled:
+                            type: boolean
+                          publicNetworkNames:
+                            items:
+                              type: string
+                            type: array
                         type: object
                       router:
                         description: OpenstackRouter defines the config for a router
@@ -530,6 +551,10 @@ spec:
                     description: AllocateNodeCIDRs enables CIDRs for Pods to be allocated
                       and, if ConfigureCloudRoutes is true, to be set on the cloud
                       provider.
+                    type: boolean
+                  allowUntaggedCloud:
+                    description: Allow the cluster to run without the cluster-id on
+                      cloud instances
                     type: boolean
                   cidrAllocatorType:
                     description: CIDRAllocatorType specifies the type of CIDR allocator
@@ -645,6 +670,10 @@ spec:
                     description: 'BalanceSimilarNodeGroups makes cluster autoscaler
                       treat similar node groups as one. Default: false'
                     type: boolean
+                  cordonNodeBeforeTerminating:
+                    description: 'CordonNodeBeforeTerminating should CA cordon nodes
+                      before terminating during downscale process Default: false'
+                    type: boolean
                   cpuRequest:
                     anyOf:
                     - type: integer
@@ -744,6 +773,14 @@ spec:
                   nvidiaGPU:
                     description: NvidiaGPU configures the Nvidia GPU runtime.
                     properties:
+                      dcgmExporter:
+                        description: DCGMExporterConfig configures the DCGM exporter
+                        properties:
+                          enabled:
+                            description: Enabled determines if kOps will install the
+                              DCGM exporter
+                            type: boolean
+                        type: object
                       enabled:
                         description: Enabled determines if kOps will install the Nvidia
                           GPU runtime and drivers. They will only be installed on
@@ -780,6 +817,33 @@ spec:
                   root:
                     description: Root directory for persistent data (default "/var/lib/containerd").
                     type: string
+                  runc:
+                    description: Runc configures the runc runtime.
+                    properties:
+                      packages:
+                        description: Packages overrides the URL and hash for the packages.
+                        properties:
+                          hashAmd64:
+                            description: HashAmd64 overrides the hash for the AMD64
+                              package.
+                            type: string
+                          hashArm64:
+                            description: HashArm64 overrides the hash for the ARM64
+                              package.
+                            type: string
+                          urlAmd64:
+                            description: UrlAmd64 overrides the URL for the AMD64
+                              package.
+                            type: string
+                          urlArm64:
+                            description: UrlArm64 overrides the URL for the ARM64
+                              package.
+                            type: string
+                        type: object
+                      version:
+                        description: Version used to pick the runc package.
+                        type: string
+                    type: object
                   skipInstall:
                     description: SkipInstall prevents kOps from installing and modifying
                       containerd in any way (default "false").
@@ -5267,8 +5331,9 @@ spec:
                       is received Default: false'
                     type: boolean
                   enableSQSTerminationDraining:
-                    description: EnableSQSTerminationDraining enables queue-processor
+                    description: 'EnableSQSTerminationDraining enables queue-processor
                       mode which drains nodes when an SQS termination event is received.
+                      Default: false'
                     type: boolean
                   enableScheduledEventDraining:
                     description: 'EnableScheduledEventDraining makes node termination
@@ -5291,7 +5356,10 @@ spec:
                     type: boolean
                   managedASGTag:
                     description: ManagedASGTag is the tag used to determine which
-                      nodes NTH can take action on
+                      nodes NTH can take action on This field has kept its name even
+                      though it now maps to the --managed-tag flag due to keeping
+                      the API stable. Node termination handler does no longer check
+                      the ASG for this tag, but the actual EC2 instances.
                     type: string
                   memoryRequest:
                     anyOf:
@@ -5302,7 +5370,8 @@ spec:
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
                   prometheusEnable:
-                    description: EnablePrometheusMetrics enables the "/metrics" endpoint.
+                    description: 'EnablePrometheusMetrics enables the "/metrics" endpoint.
+                      Default: false'
                     type: boolean
                   version:
                     description: Version is the container image tag used.

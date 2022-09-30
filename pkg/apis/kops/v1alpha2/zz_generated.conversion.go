@@ -314,6 +314,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddGeneratedConversionFunc((*DCGMExporterConfig)(nil), (*kops.DCGMExporterConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha2_DCGMExporterConfig_To_kops_DCGMExporterConfig(a.(*DCGMExporterConfig), b.(*kops.DCGMExporterConfig), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*kops.DCGMExporterConfig)(nil), (*DCGMExporterConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_kops_DCGMExporterConfig_To_v1alpha2_DCGMExporterConfig(a.(*kops.DCGMExporterConfig), b.(*DCGMExporterConfig), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddGeneratedConversionFunc((*DNSAccessSpec)(nil), (*kops.DNSAccessSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_DNSAccessSpec_To_kops_DNSAccessSpec(a.(*DNSAccessSpec), b.(*kops.DNSAccessSpec), scope)
 	}); err != nil {
@@ -1044,6 +1054,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddGeneratedConversionFunc((*Runc)(nil), (*kops.Runc)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha2_Runc_To_kops_Runc(a.(*Runc), b.(*kops.Runc), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*kops.Runc)(nil), (*Runc)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_kops_Runc_To_v1alpha2_Runc(a.(*kops.Runc), b.(*Runc), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddGeneratedConversionFunc((*SSHCredential)(nil), (*kops.SSHCredential)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha2_SSHCredential_To_kops_SSHCredential(a.(*SSHCredential), b.(*kops.SSHCredential), scope)
 	}); err != nil {
@@ -1307,6 +1327,7 @@ func Convert_kops_AWSAuthenticationSpec_To_v1alpha2_AWSAuthenticationSpec(in *ko
 
 func autoConvert_v1alpha2_AWSEBSCSIDriver_To_kops_AWSEBSCSIDriver(in *AWSEBSCSIDriver, out *kops.AWSEBSCSIDriver, s conversion.Scope) error {
 	out.Enabled = in.Enabled
+	out.Managed = in.Managed
 	out.Version = in.Version
 	out.VolumeAttachLimit = in.VolumeAttachLimit
 	out.PodAnnotations = in.PodAnnotations
@@ -1320,6 +1341,7 @@ func Convert_v1alpha2_AWSEBSCSIDriver_To_kops_AWSEBSCSIDriver(in *AWSEBSCSIDrive
 
 func autoConvert_kops_AWSEBSCSIDriver_To_v1alpha2_AWSEBSCSIDriver(in *kops.AWSEBSCSIDriver, out *AWSEBSCSIDriver, s conversion.Scope) error {
 	out.Enabled = in.Enabled
+	out.Managed = in.Managed
 	out.Version = in.Version
 	out.VolumeAttachLimit = in.VolumeAttachLimit
 	out.PodAnnotations = in.PodAnnotations
@@ -1921,6 +1943,7 @@ func autoConvert_v1alpha2_CertManagerConfig_To_kops_CertManagerConfig(in *CertMa
 	out.Image = in.Image
 	out.DefaultIssuer = in.DefaultIssuer
 	out.Nameservers = in.Nameservers
+	out.HostedZoneIDs = in.HostedZoneIDs
 	return nil
 }
 
@@ -1935,6 +1958,7 @@ func autoConvert_kops_CertManagerConfig_To_v1alpha2_CertManagerConfig(in *kops.C
 	out.Image = in.Image
 	out.DefaultIssuer = in.DefaultIssuer
 	out.Nameservers = in.Nameservers
+	out.HostedZoneIDs = in.HostedZoneIDs
 	return nil
 }
 
@@ -2216,6 +2240,7 @@ func autoConvert_v1alpha2_CloudControllerManagerConfig_To_kops_CloudControllerMa
 	out.Image = in.Image
 	out.CloudProvider = in.CloudProvider
 	out.ClusterName = in.ClusterName
+	out.AllowUntaggedCloud = in.AllowUntaggedCloud
 	out.ClusterCIDR = in.ClusterCIDR
 	out.AllocateNodeCIDRs = in.AllocateNodeCIDRs
 	out.ConfigureCloudRoutes = in.ConfigureCloudRoutes
@@ -2247,6 +2272,7 @@ func autoConvert_kops_CloudControllerManagerConfig_To_v1alpha2_CloudControllerMa
 	out.Image = in.Image
 	out.CloudProvider = in.CloudProvider
 	out.ClusterName = in.ClusterName
+	out.AllowUntaggedCloud = in.AllowUntaggedCloud
 	out.ClusterCIDR = in.ClusterCIDR
 	out.AllocateNodeCIDRs = in.AllocateNodeCIDRs
 	out.ConfigureCloudRoutes = in.ConfigureCloudRoutes
@@ -2308,6 +2334,7 @@ func autoConvert_v1alpha2_ClusterAutoscalerConfig_To_kops_ClusterAutoscalerConfi
 	out.SkipNodesWithLocalStorage = in.SkipNodesWithLocalStorage
 	out.NewPodScaleUpDelay = in.NewPodScaleUpDelay
 	out.ScaleDownDelayAfterAdd = in.ScaleDownDelayAfterAdd
+	out.CordonNodeBeforeTerminating = in.CordonNodeBeforeTerminating
 	out.Image = in.Image
 	out.MemoryRequest = in.MemoryRequest
 	out.CPURequest = in.CPURequest
@@ -2331,6 +2358,7 @@ func autoConvert_kops_ClusterAutoscalerConfig_To_v1alpha2_ClusterAutoscalerConfi
 	out.SkipNodesWithLocalStorage = in.SkipNodesWithLocalStorage
 	out.NewPodScaleUpDelay = in.NewPodScaleUpDelay
 	out.ScaleDownDelayAfterAdd = in.ScaleDownDelayAfterAdd
+	out.CordonNodeBeforeTerminating = in.CordonNodeBeforeTerminating
 	out.Image = in.Image
 	out.MemoryRequest = in.MemoryRequest
 	out.CPURequest = in.CPURequest
@@ -3322,6 +3350,15 @@ func autoConvert_v1alpha2_ContainerdConfig_To_kops_ContainerdConfig(in *Containe
 	} else {
 		out.NvidiaGPU = nil
 	}
+	if in.Runc != nil {
+		in, out := &in.Runc, &out.Runc
+		*out = new(kops.Runc)
+		if err := Convert_v1alpha2_Runc_To_kops_Runc(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Runc = nil
+	}
 	return nil
 }
 
@@ -3357,12 +3394,41 @@ func autoConvert_kops_ContainerdConfig_To_v1alpha2_ContainerdConfig(in *kops.Con
 	} else {
 		out.NvidiaGPU = nil
 	}
+	if in.Runc != nil {
+		in, out := &in.Runc, &out.Runc
+		*out = new(Runc)
+		if err := Convert_kops_Runc_To_v1alpha2_Runc(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Runc = nil
+	}
 	return nil
 }
 
 // Convert_kops_ContainerdConfig_To_v1alpha2_ContainerdConfig is an autogenerated conversion function.
 func Convert_kops_ContainerdConfig_To_v1alpha2_ContainerdConfig(in *kops.ContainerdConfig, out *ContainerdConfig, s conversion.Scope) error {
 	return autoConvert_kops_ContainerdConfig_To_v1alpha2_ContainerdConfig(in, out, s)
+}
+
+func autoConvert_v1alpha2_DCGMExporterConfig_To_kops_DCGMExporterConfig(in *DCGMExporterConfig, out *kops.DCGMExporterConfig, s conversion.Scope) error {
+	out.Enabled = in.Enabled
+	return nil
+}
+
+// Convert_v1alpha2_DCGMExporterConfig_To_kops_DCGMExporterConfig is an autogenerated conversion function.
+func Convert_v1alpha2_DCGMExporterConfig_To_kops_DCGMExporterConfig(in *DCGMExporterConfig, out *kops.DCGMExporterConfig, s conversion.Scope) error {
+	return autoConvert_v1alpha2_DCGMExporterConfig_To_kops_DCGMExporterConfig(in, out, s)
+}
+
+func autoConvert_kops_DCGMExporterConfig_To_v1alpha2_DCGMExporterConfig(in *kops.DCGMExporterConfig, out *DCGMExporterConfig, s conversion.Scope) error {
+	out.Enabled = in.Enabled
+	return nil
+}
+
+// Convert_kops_DCGMExporterConfig_To_v1alpha2_DCGMExporterConfig is an autogenerated conversion function.
+func Convert_kops_DCGMExporterConfig_To_v1alpha2_DCGMExporterConfig(in *kops.DCGMExporterConfig, out *DCGMExporterConfig, s conversion.Scope) error {
+	return autoConvert_kops_DCGMExporterConfig_To_v1alpha2_DCGMExporterConfig(in, out, s)
 }
 
 func autoConvert_v1alpha2_DNSAccessSpec_To_kops_DNSAccessSpec(in *DNSAccessSpec, out *kops.DNSAccessSpec, s conversion.Scope) error {
@@ -6489,6 +6555,15 @@ func Convert_kops_NodeTerminationHandlerConfig_To_v1alpha2_NodeTerminationHandle
 func autoConvert_v1alpha2_NvidiaGPUConfig_To_kops_NvidiaGPUConfig(in *NvidiaGPUConfig, out *kops.NvidiaGPUConfig, s conversion.Scope) error {
 	out.DriverPackage = in.DriverPackage
 	out.Enabled = in.Enabled
+	if in.DCGMExporter != nil {
+		in, out := &in.DCGMExporter, &out.DCGMExporter
+		*out = new(kops.DCGMExporterConfig)
+		if err := Convert_v1alpha2_DCGMExporterConfig_To_kops_DCGMExporterConfig(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.DCGMExporter = nil
+	}
 	return nil
 }
 
@@ -6500,6 +6575,15 @@ func Convert_v1alpha2_NvidiaGPUConfig_To_kops_NvidiaGPUConfig(in *NvidiaGPUConfi
 func autoConvert_kops_NvidiaGPUConfig_To_v1alpha2_NvidiaGPUConfig(in *kops.NvidiaGPUConfig, out *NvidiaGPUConfig, s conversion.Scope) error {
 	out.DriverPackage = in.DriverPackage
 	out.Enabled = in.Enabled
+	if in.DCGMExporter != nil {
+		in, out := &in.DCGMExporter, &out.DCGMExporter
+		*out = new(DCGMExporterConfig)
+		if err := Convert_kops_DCGMExporterConfig_To_v1alpha2_DCGMExporterConfig(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.DCGMExporter = nil
+	}
 	return nil
 }
 
@@ -6622,6 +6706,9 @@ func Convert_kops_OpenstackMonitor_To_v1alpha2_OpenstackMonitor(in *kops.Opensta
 
 func autoConvert_v1alpha2_OpenstackNetwork_To_kops_OpenstackNetwork(in *OpenstackNetwork, out *kops.OpenstackNetwork, s conversion.Scope) error {
 	out.AvailabilityZoneHints = in.AvailabilityZoneHints
+	out.IPv6SupportDisabled = in.IPv6SupportDisabled
+	out.PublicNetworkNames = in.PublicNetworkNames
+	out.InternalNetworkNames = in.InternalNetworkNames
 	return nil
 }
 
@@ -6632,6 +6719,9 @@ func Convert_v1alpha2_OpenstackNetwork_To_kops_OpenstackNetwork(in *OpenstackNet
 
 func autoConvert_kops_OpenstackNetwork_To_v1alpha2_OpenstackNetwork(in *kops.OpenstackNetwork, out *OpenstackNetwork, s conversion.Scope) error {
 	out.AvailabilityZoneHints = in.AvailabilityZoneHints
+	out.IPv6SupportDisabled = in.IPv6SupportDisabled
+	out.PublicNetworkNames = in.PublicNetworkNames
+	out.InternalNetworkNames = in.InternalNetworkNames
 	return nil
 }
 
@@ -6926,6 +7016,44 @@ func autoConvert_kops_RouteSpec_To_v1alpha2_RouteSpec(in *kops.RouteSpec, out *R
 // Convert_kops_RouteSpec_To_v1alpha2_RouteSpec is an autogenerated conversion function.
 func Convert_kops_RouteSpec_To_v1alpha2_RouteSpec(in *kops.RouteSpec, out *RouteSpec, s conversion.Scope) error {
 	return autoConvert_kops_RouteSpec_To_v1alpha2_RouteSpec(in, out, s)
+}
+
+func autoConvert_v1alpha2_Runc_To_kops_Runc(in *Runc, out *kops.Runc, s conversion.Scope) error {
+	out.Version = in.Version
+	if in.Packages != nil {
+		in, out := &in.Packages, &out.Packages
+		*out = new(kops.PackagesConfig)
+		if err := Convert_v1alpha2_PackagesConfig_To_kops_PackagesConfig(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Packages = nil
+	}
+	return nil
+}
+
+// Convert_v1alpha2_Runc_To_kops_Runc is an autogenerated conversion function.
+func Convert_v1alpha2_Runc_To_kops_Runc(in *Runc, out *kops.Runc, s conversion.Scope) error {
+	return autoConvert_v1alpha2_Runc_To_kops_Runc(in, out, s)
+}
+
+func autoConvert_kops_Runc_To_v1alpha2_Runc(in *kops.Runc, out *Runc, s conversion.Scope) error {
+	out.Version = in.Version
+	if in.Packages != nil {
+		in, out := &in.Packages, &out.Packages
+		*out = new(PackagesConfig)
+		if err := Convert_kops_PackagesConfig_To_v1alpha2_PackagesConfig(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Packages = nil
+	}
+	return nil
+}
+
+// Convert_kops_Runc_To_v1alpha2_Runc is an autogenerated conversion function.
+func Convert_kops_Runc_To_v1alpha2_Runc(in *kops.Runc, out *Runc, s conversion.Scope) error {
+	return autoConvert_kops_Runc_To_v1alpha2_Runc(in, out, s)
 }
 
 func autoConvert_v1alpha2_SSHCredential_To_kops_SSHCredential(in *SSHCredential, out *kops.SSHCredential, s conversion.Scope) error {

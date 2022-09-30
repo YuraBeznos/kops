@@ -71,14 +71,10 @@ metadata:
     kops.k8s.io/cluster: private.example.com
   name: bastions
 spec:
-  image: ubuntu-os-cloud/ubuntu-2004-focal-v20220118
+  image: ubuntu-os-cloud/ubuntu-2004-focal-v20220927
   machineType: f1-micro
-  manager: CloudGroup
   maxSize: 1
   minSize: 1
-  nodeLabels:
-    cloud.google.com/metadata-proxy-ready: "true"
-    kops.k8s.io/instancegroup: bastions
   role: Bastion
   subnets:
   - us-test1
@@ -98,14 +94,10 @@ spec:
   additionalSecurityGroups:
   - sg-exampleid3
   - sg-exampleid4
-  image: ubuntu-os-cloud/ubuntu-2004-focal-v20220118
-  machineType: n1-standard-1
-  manager: CloudGroup
+  image: ubuntu-os-cloud/ubuntu-2004-focal-v20220927
+  machineType: e2-standard-2
   maxSize: 1
   minSize: 1
-  nodeLabels:
-    cloud.google.com/metadata-proxy-ready: "true"
-    kops.k8s.io/instancegroup: master-us-test1-a
   role: Master
   subnets:
   - us-test1
@@ -125,14 +117,10 @@ spec:
   additionalSecurityGroups:
   - sg-exampleid
   - sg-exampleid2
-  image: ubuntu-os-cloud/ubuntu-2004-focal-v20220118
+  image: ubuntu-os-cloud/ubuntu-2004-focal-v20220927
   machineType: n1-standard-2
-  manager: CloudGroup
   maxSize: 1
   minSize: 1
-  nodeLabels:
-    cloud.google.com/metadata-proxy-ready: "true"
-    kops.k8s.io/instancegroup: nodes-us-test1-a
   role: Node
   subnets:
   - us-test1

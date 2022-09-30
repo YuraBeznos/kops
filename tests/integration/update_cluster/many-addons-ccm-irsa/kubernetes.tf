@@ -340,6 +340,8 @@ resource "aws_iam_role" "aws-cloud-controller-manager-kube-system-sa-minimal-exa
     "KubernetesCluster"                         = "minimal.example.com"
     "Name"                                      = "aws-cloud-controller-manager.kube-system.sa.minimal.example.com"
     "kubernetes.io/cluster/minimal.example.com" = "owned"
+    "service-account.kops.k8s.io/name"          = "aws-cloud-controller-manager"
+    "service-account.kops.k8s.io/namespace"     = "kube-system"
   }
 }
 
@@ -350,6 +352,8 @@ resource "aws_iam_role" "aws-load-balancer-controller-kube-system-sa-minimal-exa
     "KubernetesCluster"                         = "minimal.example.com"
     "Name"                                      = "aws-load-balancer-controller.kube-system.sa.minimal.example.com"
     "kubernetes.io/cluster/minimal.example.com" = "owned"
+    "service-account.kops.k8s.io/name"          = "aws-load-balancer-controller"
+    "service-account.kops.k8s.io/namespace"     = "kube-system"
   }
 }
 
@@ -360,6 +364,8 @@ resource "aws_iam_role" "aws-node-termination-handler-kube-system-sa-minimal-exa
     "KubernetesCluster"                         = "minimal.example.com"
     "Name"                                      = "aws-node-termination-handler.kube-system.sa.minimal.example.com"
     "kubernetes.io/cluster/minimal.example.com" = "owned"
+    "service-account.kops.k8s.io/name"          = "aws-node-termination-handler"
+    "service-account.kops.k8s.io/namespace"     = "kube-system"
   }
 }
 
@@ -370,6 +376,8 @@ resource "aws_iam_role" "cluster-autoscaler-kube-system-sa-minimal-example-com" 
     "KubernetesCluster"                         = "minimal.example.com"
     "Name"                                      = "cluster-autoscaler.kube-system.sa.minimal.example.com"
     "kubernetes.io/cluster/minimal.example.com" = "owned"
+    "service-account.kops.k8s.io/name"          = "cluster-autoscaler"
+    "service-account.kops.k8s.io/namespace"     = "kube-system"
   }
 }
 
@@ -380,6 +388,8 @@ resource "aws_iam_role" "dns-controller-kube-system-sa-minimal-example-com" {
     "KubernetesCluster"                         = "minimal.example.com"
     "Name"                                      = "dns-controller.kube-system.sa.minimal.example.com"
     "kubernetes.io/cluster/minimal.example.com" = "owned"
+    "service-account.kops.k8s.io/name"          = "dns-controller"
+    "service-account.kops.k8s.io/namespace"     = "kube-system"
   }
 }
 
@@ -390,6 +400,8 @@ resource "aws_iam_role" "ebs-csi-controller-sa-kube-system-sa-minimal-example-co
     "KubernetesCluster"                         = "minimal.example.com"
     "Name"                                      = "ebs-csi-controller-sa.kube-system.sa.minimal.example.com"
     "kubernetes.io/cluster/minimal.example.com" = "owned"
+    "service-account.kops.k8s.io/name"          = "ebs-csi-controller-sa"
+    "service-account.kops.k8s.io/namespace"     = "kube-system"
   }
 }
 
@@ -716,18 +728,18 @@ resource "aws_s3_object" "kops-version-txt" {
   server_side_encryption = "AES256"
 }
 
-resource "aws_s3_object" "manifests-etcdmanager-events" {
+resource "aws_s3_object" "manifests-etcdmanager-events-master-us-test-1a" {
   bucket                 = "testingBucket"
-  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-events_content")
-  key                    = "clusters.example.com/minimal.example.com/manifests/etcd/events.yaml"
+  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-events-master-us-test-1a_content")
+  key                    = "clusters.example.com/minimal.example.com/manifests/etcd/events-master-us-test-1a.yaml"
   provider               = aws.files
   server_side_encryption = "AES256"
 }
 
-resource "aws_s3_object" "manifests-etcdmanager-main" {
+resource "aws_s3_object" "manifests-etcdmanager-main-master-us-test-1a" {
   bucket                 = "testingBucket"
-  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-main_content")
-  key                    = "clusters.example.com/minimal.example.com/manifests/etcd/main.yaml"
+  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-main-master-us-test-1a_content")
+  key                    = "clusters.example.com/minimal.example.com/manifests/etcd/main-master-us-test-1a.yaml"
   provider               = aws.files
   server_side_encryption = "AES256"
 }
@@ -1037,12 +1049,14 @@ resource "aws_subnet" "us-test-1a-minimal-example-com" {
   availability_zone = "us-test-1a"
   cidr_block        = "172.20.32.0/19"
   tags = {
-    "KubernetesCluster"                         = "minimal.example.com"
-    "Name"                                      = "us-test-1a.minimal.example.com"
-    "SubnetType"                                = "Public"
-    "kubernetes.io/cluster/minimal.example.com" = "owned"
-    "kubernetes.io/role/elb"                    = "1"
-    "kubernetes.io/role/internal-elb"           = "1"
+    "KubernetesCluster"                            = "minimal.example.com"
+    "Name"                                         = "us-test-1a.minimal.example.com"
+    "SubnetType"                                   = "Public"
+    "kops.k8s.io/instance-group/master-us-test-1a" = "true"
+    "kops.k8s.io/instance-group/nodes"             = "true"
+    "kubernetes.io/cluster/minimal.example.com"    = "owned"
+    "kubernetes.io/role/elb"                       = "1"
+    "kubernetes.io/role/internal-elb"              = "1"
   }
   vpc_id = aws_vpc.minimal-example-com.id
 }

@@ -333,13 +333,14 @@ spec:
         - --scale-down-delay-after-add=10m0s
         - --new-pod-scale-up-delay=0s
         - --max-node-provision-time=15m0s
+        - --cordon-node-before-terminating=true
         - --logtostderr=true
         - --stderrthreshold=info
         - --v=4
         env:
         - name: AWS_REGION
           value: us-test-1
-        image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.21.2
+        image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.21.3
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3

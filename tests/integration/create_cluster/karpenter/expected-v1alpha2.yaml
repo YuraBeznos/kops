@@ -78,16 +78,13 @@ metadata:
     kops.k8s.io/cluster: karpenter.example.com
   name: master-us-test-1a
 spec:
-  image: 099720109477/ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20220615
+  image: 099720109477/ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20220924
   instanceMetadata:
     httpPutResponseHopLimit: 3
     httpTokens: required
   machineType: m3.medium
-  manager: CloudGroup
   maxSize: 1
   minSize: 1
-  nodeLabels:
-    kops.k8s.io/instancegroup: master-us-test-1a
   role: Master
   subnets:
   - us-test-1a
@@ -102,15 +99,11 @@ metadata:
     kops.k8s.io/cluster: karpenter.example.com
   name: nodes
 spec:
-  image: 099720109477/ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20220615
+  image: 099720109477/ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20220924
   instanceMetadata:
     httpPutResponseHopLimit: 1
     httpTokens: required
   manager: Karpenter
-  maxSize: 2
-  minSize: 2
-  nodeLabels:
-    kops.k8s.io/instancegroup: nodes
   role: Node
   subnets:
   - us-test-1a

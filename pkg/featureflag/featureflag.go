@@ -17,11 +17,11 @@ limitations under the License.
 // Package featureflag implements simple feature-flagging.
 // Feature flags can become an anti-pattern if abused.
 // We should try to use them for two use-cases:
-// * `Preview` feature flags enable a piece of functionality we haven't yet fully baked.  The user needs to 'opt-in'.
-//   We expect these flags to be removed at some time.  Normally these will default to false.
-// * Escape-hatch feature flags turn off a default that we consider risky (e.g. pre-creating DNS records).
-//   This lets us ship a behaviour, and if we encounter unusual circumstances in the field, we can
-//   allow the user to turn the behaviour off.  Normally these will default to true.
+//   - `Preview` feature flags enable a piece of functionality we haven't yet fully baked.  The user needs to 'opt-in'.
+//     We expect these flags to be removed at some time.  Normally these will default to false.
+//   - Escape-hatch feature flags turn off a default that we consider risky (e.g. pre-creating DNS records).
+//     This lets us ship a behaviour, and if we encounter unusual circumstances in the field, we can
+//     allow the user to turn the behaviour off.  Normally these will default to true.
 package featureflag
 
 import (
@@ -90,6 +90,8 @@ var (
 	Karpenter = new("Karpenter", Bool(false))
 	// ImageDigest remaps all manifests with image digests
 	ImageDigest = new("ImageDigest", Bool(true))
+	// Scaleway toggles the Scaleway Cloud support.
+	Scaleway = new("Scaleway", Bool(false))
 	// Hetzner toggles the Hetzner Cloud support.
 	Hetzner = new("Hetzner", Bool(false))
 	// Yandex toggles the Yandex Cloud support.

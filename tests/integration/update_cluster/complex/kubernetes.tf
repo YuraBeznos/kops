@@ -513,7 +513,6 @@ resource "aws_lb" "api-complex-example-com" {
   access_logs {
     bucket  = "access-log-example"
     enabled = true
-    prefix  = ""
   }
   enable_cross_zone_load_balancing = true
   internal                         = false
@@ -786,18 +785,18 @@ resource "aws_s3_object" "kops-version-txt" {
   server_side_encryption = "AES256"
 }
 
-resource "aws_s3_object" "manifests-etcdmanager-events" {
+resource "aws_s3_object" "manifests-etcdmanager-events-master-us-test-1a" {
   bucket                 = "testingBucket"
-  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-events_content")
-  key                    = "clusters.example.com/complex.example.com/manifests/etcd/events.yaml"
+  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-events-master-us-test-1a_content")
+  key                    = "clusters.example.com/complex.example.com/manifests/etcd/events-master-us-test-1a.yaml"
   provider               = aws.files
   server_side_encryption = "AES256"
 }
 
-resource "aws_s3_object" "manifests-etcdmanager-main" {
+resource "aws_s3_object" "manifests-etcdmanager-main-master-us-test-1a" {
   bucket                 = "testingBucket"
-  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-main_content")
-  key                    = "clusters.example.com/complex.example.com/manifests/etcd/main.yaml"
+  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-main-master-us-test-1a_content")
+  key                    = "clusters.example.com/complex.example.com/manifests/etcd/main-master-us-test-1a.yaml"
   provider               = aws.files
   server_side_encryption = "AES256"
 }
@@ -1149,14 +1148,16 @@ resource "aws_subnet" "us-test-1a-complex-example-com" {
   enable_resource_name_dns_a_record_on_launch = true
   private_dns_hostname_type_on_launch         = "resource-name"
   tags = {
-    "KubernetesCluster"                         = "complex.example.com"
-    "Name"                                      = "us-test-1a.complex.example.com"
-    "Owner"                                     = "John Doe"
-    "SubnetType"                                = "Public"
-    "foo/bar"                                   = "fib+baz"
-    "kubernetes.io/cluster/complex.example.com" = "owned"
-    "kubernetes.io/role/elb"                    = "1"
-    "kubernetes.io/role/internal-elb"           = "1"
+    "KubernetesCluster"                            = "complex.example.com"
+    "Name"                                         = "us-test-1a.complex.example.com"
+    "Owner"                                        = "John Doe"
+    "SubnetType"                                   = "Public"
+    "foo/bar"                                      = "fib+baz"
+    "kops.k8s.io/instance-group/master-us-test-1a" = "true"
+    "kops.k8s.io/instance-group/nodes"             = "true"
+    "kubernetes.io/cluster/complex.example.com"    = "owned"
+    "kubernetes.io/role/elb"                       = "1"
+    "kubernetes.io/role/internal-elb"              = "1"
   }
   vpc_id = aws_vpc.complex-example-com.id
 }

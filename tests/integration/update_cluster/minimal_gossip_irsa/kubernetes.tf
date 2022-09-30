@@ -560,18 +560,18 @@ resource "aws_s3_object" "kops-version-txt" {
   server_side_encryption = "AES256"
 }
 
-resource "aws_s3_object" "manifests-etcdmanager-events" {
+resource "aws_s3_object" "manifests-etcdmanager-events-master-us-test-1a" {
   bucket                 = "testingBucket"
-  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-events_content")
-  key                    = "clusters.example.com/minimal.k8s.local/manifests/etcd/events.yaml"
+  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-events-master-us-test-1a_content")
+  key                    = "clusters.example.com/minimal.k8s.local/manifests/etcd/events-master-us-test-1a.yaml"
   provider               = aws.files
   server_side_encryption = "AES256"
 }
 
-resource "aws_s3_object" "manifests-etcdmanager-main" {
+resource "aws_s3_object" "manifests-etcdmanager-main-master-us-test-1a" {
   bucket                 = "testingBucket"
-  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-main_content")
-  key                    = "clusters.example.com/minimal.k8s.local/manifests/etcd/main.yaml"
+  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-main-master-us-test-1a_content")
+  key                    = "clusters.example.com/minimal.k8s.local/manifests/etcd/main-master-us-test-1a.yaml"
   provider               = aws.files
   server_side_encryption = "AES256"
 }
@@ -808,12 +808,14 @@ resource "aws_subnet" "us-test-1a-minimal-k8s-local" {
   availability_zone = "us-test-1a"
   cidr_block        = "172.20.32.0/19"
   tags = {
-    "KubernetesCluster"                       = "minimal.k8s.local"
-    "Name"                                    = "us-test-1a.minimal.k8s.local"
-    "SubnetType"                              = "Public"
-    "kubernetes.io/cluster/minimal.k8s.local" = "owned"
-    "kubernetes.io/role/elb"                  = "1"
-    "kubernetes.io/role/internal-elb"         = "1"
+    "KubernetesCluster"                            = "minimal.k8s.local"
+    "Name"                                         = "us-test-1a.minimal.k8s.local"
+    "SubnetType"                                   = "Public"
+    "kops.k8s.io/instance-group/master-us-test-1a" = "true"
+    "kops.k8s.io/instance-group/nodes"             = "true"
+    "kubernetes.io/cluster/minimal.k8s.local"      = "owned"
+    "kubernetes.io/role/elb"                       = "1"
+    "kubernetes.io/role/internal-elb"              = "1"
   }
   vpc_id = aws_vpc.minimal-k8s-local.id
 }

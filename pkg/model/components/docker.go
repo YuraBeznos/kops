@@ -47,11 +47,7 @@ func (b *DockerOptionsBuilder) BuildOptions(o interface{}) error {
 
 	// Set the Docker version for known Kubernetes versions
 	if fi.StringValue(clusterSpec.Docker.Version) == "" {
-		if b.IsKubernetesGTE("1.21") {
-			docker.Version = fi.String("20.10.17")
-		} else {
-			docker.Version = fi.String("19.03.15")
-		}
+		docker.Version = fi.String("20.10.17")
 	}
 
 	if len(clusterSpec.Docker.LogOpt) == 0 && clusterSpec.Docker.LogDriver == nil {
@@ -72,7 +68,7 @@ func (b *DockerOptionsBuilder) BuildOptions(o interface{}) error {
 	docker.Storage = fi.String("overlay2,overlay,aufs")
 
 	// Set systemd as the default cgroup driver in docker from k8s 1.20.
-	if b.IsKubernetesGTE("1.20") && getDockerCgroupDriver(docker.ExecOpt) == "" {
+	if getDockerCgroupDriver(docker.ExecOpt) == "" {
 		docker.ExecOpt = append(docker.ExecOpt, "native.cgroupdriver=systemd")
 	}
 

@@ -1,4 +1,3 @@
-Resources.AWSEC2LaunchTemplatebastionprivateciliumexamplecom.Properties.LaunchTemplateData.UserData: ""
 Resources.AWSEC2LaunchTemplatemasterustest1amastersprivateciliumexamplecom.Properties.LaunchTemplateData.UserData: |
   #!/bin/bash
   set -o errexit
@@ -246,7 +245,7 @@ Resources.AWSEC2LaunchTemplatemasterustest1amastersprivateciliumexamplecom.Prope
   ConfigBase: memfs://clusters.example.com/privatecilium.example.com
   InstanceGroupName: master-us-test-1a
   InstanceGroupRole: Master
-  NodeupConfigHash: bKc1KP/JQTUdvYAXtv0jn/J8yN8Yp+lBmpCOvj4l5Aw=
+  NodeupConfigHash: bg974WxlQv4xuk4mU9wotUbXVwHrf9Ns3S5Owp42uW4=
 
   __EOF_KUBE_ENV
 

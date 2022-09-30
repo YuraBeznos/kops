@@ -20,18 +20,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/blang/semver/v4"
 	"k8s.io/klog/v2"
 
 	"k8s.io/kops/pkg/apis/kops"
-	"k8s.io/kops/pkg/apis/kops/util"
 	"k8s.io/kops/pkg/apis/kops/validation"
 	"k8s.io/kops/pkg/featureflag"
+	"k8s.io/kops/pkg/nodelabels"
 	"k8s.io/kops/upup/pkg/fi"
 	"k8s.io/kops/upup/pkg/fi/cloudup/awsup"
 	"k8s.io/kops/upup/pkg/fi/cloudup/openstack"
-	"k8s.io/kops/util/pkg/architectures"
 	"k8s.io/kops/util/pkg/reflectutils"
 )
 
@@ -48,7 +45,7 @@ const (
 	defaultBastionMachineTypeHetzner = "cx11"
 	defaultBastionMachineTypeYandex  = "standard-v1"
 
-	defaultMasterMachineTypeGCE     = "n1-standard-1"
+	defaultMasterMachineTypeGCE     = "e2-medium"
 	defaultMasterMachineTypeDO      = "s-2vcpu-4gb"
 	defaultMasterMachineTypeAzure   = "Standard_B2ms"
 	defaultMasterMachineTypeHetzner = "cx21"
@@ -69,16 +66,19 @@ var awsDedicatedInstanceExceptions = map[string]bool{
 }
 
 // PopulateInstanceGroupSpec sets default values in the InstanceGroup
-// The InstanceGroup is simpler than the cluster spec, so we just populate in place (like the rest of k8s)
 func PopulateInstanceGroupSpec(cluster *kops.Cluster, input *kops.InstanceGroup, cloud fi.Cloud, channel *kops.Channel) (*kops.InstanceGroup, error) {
+	klog.V(2).Infof("Populating instance group spec for %q", input.GetName())
+
 	var err error
 	err = validation.ValidateInstanceGroup(input, nil, false).ToAggregate()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed validating input specs: %w", err)
 	}
 
 	ig := &kops.InstanceGroup{}
 	reflectutils.JSONMergeStruct(ig, input)
+
+	spec := &ig.Spec
 
 	// TODO: Clean up
 	if ig.IsMaster() {
@@ -226,6 +226,40 @@ func PopulateInstanceGroupSpec(cluster *kops.Cluster, input *kops.InstanceGroup,
 	if ig.Spec.Manager == "" {
 		ig.Spec.Manager = kops.InstanceManagerCloudGroup
 	}
+
+	if spec.Kubelet == nil {
+		spec.Kubelet = &kops.KubeletConfigSpec{}
+	}
+
+	kubeletConfig := spec.Kubelet
+
+	// We include the NodeLabels in the userdata even for Kubernetes 1.16 and later so that
+	// rolling update will still replace nodes when they change.
+	kubeletConfig.NodeLabels = nodelabels.BuildNodeLabels(cluster, ig)
+
+	kubeletConfig.Taints = append(kubeletConfig.Taints, spec.Taints...)
+
+	if ig.IsMaster() {
+		reflectutils.JSONMergeStruct(kubeletConfig, cluster.Spec.MasterKubelet)
+
+		// A few settings in Kubelet override those in MasterKubelet. I'm not sure why.
+		if cluster.Spec.Kubelet != nil && cluster.Spec.Kubelet.AnonymousAuth != nil && !*cluster.Spec.Kubelet.AnonymousAuth {
+			kubeletConfig.AnonymousAuth = fi.Bool(false)
+		}
+	} else {
+		reflectutils.JSONMergeStruct(kubeletConfig, cluster.Spec.Kubelet)
+	}
+
+	if ig.Spec.Kubelet != nil {
+		useSecureKubelet := fi.BoolValue(kubeletConfig.AnonymousAuth)
+
+		reflectutils.JSONMergeStruct(kubeletConfig, spec.Kubelet)
+
+		if useSecureKubelet {
+			kubeletConfig.AnonymousAuth = fi.Bool(false)
+		}
+	}
+
 	return ig, nil
 }
 
@@ -311,66 +345,4 @@ func defaultMachineType(cloud fi.Cloud, cluster *kops.Cluster, ig *kops.Instance
 
 	klog.V(2).Infof("Cannot set default MachineType for CloudProvider=%q, Role=%q", cluster.Spec.GetCloudProvider(), ig.Spec.Role)
 	return "", nil
-}
-
-// defaultImage returns the default Image, based on the cloudprovider
-func defaultImage(cluster *kops.Cluster, channel *kops.Channel, architecture architectures.Architecture) string {
-	if channel != nil {
-		var kubernetesVersion *semver.Version
-		if cluster.Spec.KubernetesVersion != "" {
-			var err error
-			kubernetesVersion, err = util.ParseKubernetesVersion(cluster.Spec.KubernetesVersion)
-			if err != nil {
-				klog.Warningf("cannot parse KubernetesVersion %q in cluster", cluster.Spec.KubernetesVersion)
-			}
-		}
-		if kubernetesVersion != nil {
-			image := channel.FindImage(cluster.Spec.GetCloudProvider(), *kubernetesVersion, architecture)
-			if image != nil {
-				return image.Name
-			}
-		}
-	}
-
-	switch cluster.Spec.GetCloudProvider() {
-	case kops.CloudProviderDO:
-		return defaultDONodeImage
-	case kops.CloudProviderYandex:
-		return defaultYandexNodeImage
-	}
-	klog.Infof("Cannot set default Image for CloudProvider=%q", cluster.Spec.GetCloudProvider())
-	return ""
-}
-
-func MachineArchitecture(cloud fi.Cloud, machineType string) (architectures.Architecture, error) {
-	if machineType == "" {
-		return architectures.ArchitectureAmd64, nil
-	}
-
-	switch cloud.ProviderID() {
-	case kops.CloudProviderAWS:
-		info, err := cloud.(awsup.AWSCloud).DescribeInstanceType(machineType)
-		if err != nil {
-			return "", fmt.Errorf("error finding instance info for instance type %q: %v", machineType, err)
-		}
-		if info.ProcessorInfo == nil || len(info.ProcessorInfo.SupportedArchitectures) == 0 {
-			return "", fmt.Errorf("error finding architecture info for instance type %q", machineType)
-		}
-		var unsupported []string
-		for _, arch := range info.ProcessorInfo.SupportedArchitectures {
-			// Return the first found supported architecture, in order of popularity
-			switch fi.StringValue(arch) {
-			case ec2.ArchitectureTypeX8664:
-				return architectures.ArchitectureAmd64, nil
-			case ec2.ArchitectureTypeArm64:
-				return architectures.ArchitectureArm64, nil
-			default:
-				unsupported = append(unsupported, fi.StringValue(arch))
-			}
-		}
-		return "", fmt.Errorf("unsupported architecture for instance type %q: %v", machineType, unsupported)
-	default:
-		// No other clouds are known to support any other architectures at this time
-		return architectures.ArchitectureAmd64, nil
-	}
 }

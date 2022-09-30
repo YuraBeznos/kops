@@ -1225,6 +1225,14 @@
             "Value": "fib+baz"
           },
           {
+            "Key": "kops.k8s.io/instance-group/master-us-test-1a",
+            "Value": "true"
+          },
+          {
+            "Key": "kops.k8s.io/instance-group/nodes",
+            "Value": "true"
+          },
+          {
             "Key": "kubernetes.io/cluster/complex.example.com",
             "Value": "owned"
           },
@@ -1488,8 +1496,7 @@
             "Value": "access-log-example"
           },
           {
-            "Key": "access_logs.s3.prefix",
-            "Value": ""
+            "Key": "access_logs.s3.prefix"
           }
         ]
       }
@@ -1767,6 +1774,7 @@
                 "autoscaling:DescribeAutoScalingGroups",
                 "autoscaling:DescribeAutoScalingInstances",
                 "autoscaling:DescribeLaunchConfigurations",
+                "autoscaling:DescribeScalingActivities",
                 "autoscaling:DescribeTags",
                 "ec2:DescribeAccountAttributes",
                 "ec2:DescribeInstanceTypes",

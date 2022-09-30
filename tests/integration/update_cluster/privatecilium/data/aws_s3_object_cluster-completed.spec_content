@@ -110,7 +110,7 @@ spec:
     nodeLocalDNS:
       cpuRequest: 25m
       enabled: false
-      image: registry.k8s.io/dns/k8s-dns-node-cache:1.21.3
+      image: registry.k8s.io/dns/k8s-dns-node-cache:1.22.8
       memoryRequest: 5Mi
     provider: CoreDNS
     serverIP: 100.64.0.10
@@ -165,6 +165,10 @@ spec:
   networkCIDR: 172.20.0.0/16
   networking:
     cilium:
+      agentPodAnnotations:
+        test1: "true"
+        test2: "123"
+        test3: awesome
       agentPrometheusPort: 9090
       bpfCTGlobalAnyMax: 262144
       bpfCTGlobalTCPMax: 524288
@@ -192,7 +196,7 @@ spec:
       sidecarIstioProxyImage: cilium/istio_proxy
       toFqdnsDnsRejectResponseCode: refused
       tunnel: vxlan
-      version: v1.11.6
+      version: v1.11.8
   nonMasqueradeCIDR: 100.64.0.0/10
   podCIDR: 100.96.0.0/11
   secretStore: memfs://clusters.example.com/privatecilium.example.com/secrets

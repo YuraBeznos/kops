@@ -752,18 +752,18 @@ resource "aws_s3_object" "kops-version-txt" {
   server_side_encryption = "AES256"
 }
 
-resource "aws_s3_object" "manifests-etcdmanager-events" {
+resource "aws_s3_object" "manifests-etcdmanager-events-master-us-test-1a" {
   bucket                 = "testingBucket"
-  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-events_content")
-  key                    = "clusters.example.com/minimal-ipv6.example.com/manifests/etcd/events.yaml"
+  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-events-master-us-test-1a_content")
+  key                    = "clusters.example.com/minimal-ipv6.example.com/manifests/etcd/events-master-us-test-1a.yaml"
   provider               = aws.files
   server_side_encryption = "AES256"
 }
 
-resource "aws_s3_object" "manifests-etcdmanager-main" {
+resource "aws_s3_object" "manifests-etcdmanager-main-master-us-test-1a" {
   bucket                 = "testingBucket"
-  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-main_content")
-  key                    = "clusters.example.com/minimal-ipv6.example.com/manifests/etcd/main.yaml"
+  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-main-master-us-test-1a_content")
+  key                    = "clusters.example.com/minimal-ipv6.example.com/manifests/etcd/main-master-us-test-1a.yaml"
   provider               = aws.files
   server_side_encryption = "AES256"
 }
@@ -1096,6 +1096,7 @@ resource "aws_subnet" "dualstack-us-test-1a-minimal-ipv6-example-com" {
     "KubernetesCluster"                              = "minimal-ipv6.example.com"
     "Name"                                           = "dualstack-us-test-1a.minimal-ipv6.example.com"
     "SubnetType"                                     = "DualStack"
+    "kops.k8s.io/instance-group/master-us-test-1a"   = "true"
     "kubernetes.io/cluster/minimal-ipv6.example.com" = "owned"
     "kubernetes.io/role/internal-elb"                = "1"
   }
@@ -1130,6 +1131,7 @@ resource "aws_subnet" "us-test-1a-minimal-ipv6-example-com" {
     "KubernetesCluster"                              = "minimal-ipv6.example.com"
     "Name"                                           = "us-test-1a.minimal-ipv6.example.com"
     "SubnetType"                                     = "Private"
+    "kops.k8s.io/instance-group/nodes"               = "true"
     "kubernetes.io/cluster/minimal-ipv6.example.com" = "owned"
   }
   vpc_id = aws_vpc.minimal-ipv6-example-com.id
@@ -1146,6 +1148,7 @@ resource "aws_subnet" "us-test-1b-minimal-ipv6-example-com" {
     "KubernetesCluster"                              = "minimal-ipv6.example.com"
     "Name"                                           = "us-test-1b.minimal-ipv6.example.com"
     "SubnetType"                                     = "Private"
+    "kops.k8s.io/instance-group/nodes"               = "true"
     "kubernetes.io/cluster/minimal-ipv6.example.com" = "owned"
   }
   vpc_id = aws_vpc.minimal-ipv6-example-com.id

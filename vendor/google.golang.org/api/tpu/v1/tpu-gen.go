@@ -8,31 +8,31 @@
 //
 // For product documentation, see: https://cloud.google.com/tpu/
 //
-// Creating a client
+// # Creating a client
 //
 // Usage example:
 //
-//   import "google.golang.org/api/tpu/v1"
-//   ...
-//   ctx := context.Background()
-//   tpuService, err := tpu.NewService(ctx)
+//	import "google.golang.org/api/tpu/v1"
+//	...
+//	ctx := context.Background()
+//	tpuService, err := tpu.NewService(ctx)
 //
 // In this example, Google Application Default Credentials are used for authentication.
 //
 // For information on how to create and obtain Application Default Credentials, see https://developers.google.com/identity/protocols/application-default-credentials.
 //
-// Other authentication options
+// # Other authentication options
 //
 // To use an API key for authentication (note: some APIs do not support API keys), use option.WithAPIKey:
 //
-//   tpuService, err := tpu.NewService(ctx, option.WithAPIKey("AIza..."))
+//	tpuService, err := tpu.NewService(ctx, option.WithAPIKey("AIza..."))
 //
 // To use an OAuth token (e.g., a user token obtained via a three-legged OAuth flow), use option.WithTokenSource:
 //
-//   config := &oauth2.Config{...}
-//   // ...
-//   token, err := config.Exchange(ctx, ...)
-//   tpuService, err := tpu.NewService(ctx, option.WithTokenSource(config.TokenSource(ctx, token)))
+//	config := &oauth2.Config{...}
+//	// ...
+//	token, err := config.Exchange(ctx, ...)
+//	tpuService, err := tpu.NewService(ctx, option.WithTokenSource(config.TokenSource(ctx, token)))
 //
 // See https://godoc.org/google.golang.org/api/option/ for details on options.
 package tpu // import "google.golang.org/api/tpu/v1"
@@ -533,7 +533,7 @@ type Node struct {
 	// ApiVersion: Output only. The API version that created this Node.
 	//
 	// Possible values:
-	//   "API_VERSION_UNSPECIFIED" - LINT.IfChange API version is unknown.
+	//   "API_VERSION_UNSPECIFIED" - API version is unknown.
 	//   "V1_ALPHA1" - TPU API V1Alpha1 version.
 	//   "V1" - TPU API V1 version.
 	//   "V2_ALPHA1" - TPU API V2Alpha1 version.
@@ -612,8 +612,7 @@ type Node struct {
 	// State: Output only. The current state for the TPU Node.
 	//
 	// Possible values:
-	//   "STATE_UNSPECIFIED" - LINT.IfChange TPU node state is not
-	// known/set.
+	//   "STATE_UNSPECIFIED" - TPU node state is not known/set.
 	//   "CREATING" - TPU node is being created.
 	//   "READY" - TPU node has been created.
 	//   "RESTARTING" - TPU node is restarting.
@@ -631,8 +630,6 @@ type Node struct {
 	//   "HIDING" - TPU node is currently hiding.
 	//   "HIDDEN" - TPU node has been hidden.
 	//   "UNHIDING" - TPU node is currently unhiding.
-	// LINT.ThenChange(//depot/google3/java/com/google/cloud/boq/clientapi/tp
-	// u/api/gce_tpu.proto)
 	State string `json:"state,omitempty"`
 
 	// Symptoms: Output only. The Symptoms that have occurred to the TPU
@@ -1146,8 +1143,8 @@ type ProjectsLocationsListCall struct {
 // List: Lists information about the supported locations for this
 // service.
 //
-// - name: The resource that owns the locations collection, if
-//   applicable.
+//   - name: The resource that owns the locations collection, if
+//     applicable.
 func (r *ProjectsLocationsService) List(name string) *ProjectsLocationsListCall {
 	c := &ProjectsLocationsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name

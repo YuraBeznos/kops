@@ -118,6 +118,23 @@ func NewCmdRoot(f *util.Factory, out io.Writer) *cobra.Command {
 		case "cloud-provider-gce-l7lb-src-cidrs":
 			// Skip; these is dragged in by the google cloudprovider dependency
 
+		// Hide klog flags that just clutter the --help output; they are still supported, we just don't show them
+		case "add_dir_header",
+			"alsologtostderr",
+			"log_backtrace_at",
+			"log_dir",
+			"log_file",
+			"log_file_max_size",
+			"logtostderr",
+			"one_output",
+			"skip_headers",
+			"skip_log_headers",
+			"stderrthreshold",
+			"vmodule":
+			// We keep "v" as that flag is generally useful
+			cmd.PersistentFlags().AddGoFlag(goflag)
+			cmd.PersistentFlags().Lookup(goflag.Name).Hidden = true
+
 		default:
 			cmd.PersistentFlags().AddGoFlag(goflag)
 		}
@@ -243,10 +260,17 @@ func (c *RootCmd) clusterNameArgsAllowNoCluster(clusterName *string) func(cmd *c
 }
 
 // ProcessArgs will parse the positional args.  It assumes one of these formats:
-//  * <no arguments at all>
-//  * <clustername> (and --name not specified)
+//   - <no arguments at all>
+//   - <clustername> (and --name not specified)
+//
 // Everything else is an error.
 func (c *RootCmd) ProcessArgs(args []string) error {
+	if len(args) > 0 {
+		fmt.Fprintf(os.Stderr, "\n")
+		fmt.Fprintf(os.Stderr, "\nClusterName as positional argument is deprecated and will be removed in a future version\n")
+		fmt.Fprintf(os.Stderr, "\n")
+	}
+
 	if len(args) == 0 {
 		return nil
 	}
@@ -311,7 +335,7 @@ func GetCluster(ctx context.Context, factory commandutils.Factory, clusterName s
 		return nil, field.Required(field.NewPath("clusterName"), "Cluster name is required")
 	}
 
-	clientset, err := factory.Clientset()
+	clientset, err := factory.KopsClient()
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +385,7 @@ func GetClusterForCompletion(ctx context.Context, factory commandutils.Factory, 
 		return nil, nil, completions, directive
 	}
 
-	clientSet, err = factory.Clientset()
+	clientSet, err = factory.KopsClient()
 	if err != nil {
 		completions, directive := commandutils.CompletionError("getting clientset", err)
 		return nil, nil, completions, directive

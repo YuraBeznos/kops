@@ -102,7 +102,7 @@ metadata:
     k8s-app: aws-node-termination-handler
     app.kubernetes.io/version: "{{ .Version }}"
 spec:
-  replicas: 1
+  replicas: {{ ControlPlaneControllerReplicas true }}
   selector:
     matchLabels:
       app.kubernetes.io/name: aws-node-termination-handler
@@ -115,6 +115,7 @@ spec:
         app.kubernetes.io/instance: aws-node-termination-handler
         k8s-app: aws-node-termination-handler
         kubernetes.io/os: linux
+        kops.k8s.io/nth-mode: sqs
     spec:
       nodeSelector: null
       {{ if not UseServiceAccountExternalPermissions }}
@@ -170,12 +171,14 @@ spec:
           value: "{{ WithDefaultBool .EnablePrometheusMetrics false }}"
         - name: PROMETHEUS_SERVER_PORT
           value: "9092"
-        - name: CHECK_ASG_TAG_BEFORE_DRAINING
+        - name: CHECK_TAG_BEFORE_DRAINING
           value: "true"
-        - name: MANAGED_ASG_TAG
+        - name: MANAGED_TAG
           value: "{{ .ManagedASGTag }}"
         - name: ASSUME_ASG_TAG_PROPAGATION
           value: "false"
+        - name: USE_PROVIDER_ID
+          value: "true"
         - name: DRY_RUN
           value: "false"
         - name: CORDON_ONLY
@@ -237,6 +240,7 @@ spec:
           matchLabels:
             app.kubernetes.io/name: aws-node-termination-handler
             app.kubernetes.io/instance: aws-node-termination-handler
+            kops.k8s.io/nth-mode: sqs
       - maxSkew: 1
         topologyKey: "kubernetes.io/hostname"
         whenUnsatisfiable: DoNotSchedule
@@ -244,9 +248,13 @@ spec:
           matchLabels:
             app.kubernetes.io/name: aws-node-termination-handler
             app.kubernetes.io/instance: aws-node-termination-handler
-
+            kops.k8s.io/nth-mode: sqs
 ---
+{{ if IsKubernetesGTE "1.23" }}
+apiVersion: policy/v1
+{{ else }}
 apiVersion: policy/v1beta1
+{{ end }}
 kind: PodDisruptionBudget
 metadata:
   name: aws-node-termination-handler
@@ -259,6 +267,7 @@ spec:
     matchLabels:
       app.kubernetes.io/name: aws-node-termination-handler
       app.kubernetes.io/instance: aws-node-termination-handler
+      kops.k8s.io/nth-mode: sqs
   maxUnavailable: 1
 {{ else }}
 ---

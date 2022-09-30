@@ -47,12 +47,14 @@ import (
 	"k8s.io/kops/pkg/client/simple"
 	"k8s.io/kops/pkg/dns"
 	"k8s.io/kops/pkg/featureflag"
+	"k8s.io/kops/pkg/kubemanifest"
 	"k8s.io/kops/pkg/model"
 	"k8s.io/kops/pkg/model/awsmodel"
 	"k8s.io/kops/pkg/model/azuremodel"
 	"k8s.io/kops/pkg/model/components"
 	"k8s.io/kops/pkg/model/components/etcdmanager"
 	"k8s.io/kops/pkg/model/components/kubeapiserver"
+	"k8s.io/kops/pkg/model/components/kubescheduler"
 	"k8s.io/kops/pkg/model/domodel"
 	"k8s.io/kops/pkg/model/gcemodel"
 	"k8s.io/kops/pkg/model/hetznermodel"
@@ -83,13 +85,17 @@ const (
 	starline = "*********************************************************************************"
 
 	// OldestSupportedKubernetesVersion is the oldest kubernetes version that is supported in kOps.
-	OldestSupportedKubernetesVersion = "1.20.0"
+	OldestSupportedKubernetesVersion = "1.21.0"
 	// OldestRecommendedKubernetesVersion is the oldest kubernetes version that is not deprecated in kOps.
-	OldestRecommendedKubernetesVersion = "1.22.0"
+	OldestRecommendedKubernetesVersion = "1.23.0"
 )
 
 // TerraformCloudProviders is the list of cloud providers with terraform target support
-var TerraformCloudProviders = []kops.CloudProviderID{kops.CloudProviderAWS, kops.CloudProviderGCE}
+var TerraformCloudProviders = []kops.CloudProviderID{
+	kops.CloudProviderAWS,
+	kops.CloudProviderGCE,
+	kops.CloudProviderHetzner,
+}
 
 type ApplyClusterCmd struct {
 	Cloud   fi.Cloud
@@ -147,6 +153,9 @@ type ApplyClusterCmd struct {
 	ImageAssets []*assets.ImageAsset
 	// FileAssets are the file assets we use (output).
 	FileAssets []*assets.FileAsset
+
+	// AdditionalObjects holds cluster-asssociated configuration objects, other than the Cluster and InstanceGroups.
+	AdditionalObjects kubemanifest.ObjectList
 }
 
 func (c *ApplyClusterCmd) Run(ctx context.Context) error {
@@ -172,6 +181,18 @@ func (c *ApplyClusterCmd) Run(ctx context.Context) error {
 			instanceGroups = append(instanceGroups, &list.Items[i])
 		}
 		c.InstanceGroups = instanceGroups
+	}
+
+	if c.AdditionalObjects == nil {
+		additionalObjects, err := c.Clientset.AddonsFor(c.Cluster).List()
+		if err != nil {
+			return err
+		}
+		// We use the nil object to mean "uninitialized"
+		if additionalObjects == nil {
+			additionalObjects = []*kubemanifest.Object{}
+		}
+		c.AdditionalObjects = additionalObjects
 	}
 
 	for _, ig := range c.InstanceGroups {
@@ -395,8 +416,9 @@ func (c *ApplyClusterCmd) Run(ctx context.Context) error {
 	}
 
 	modelContext := &model.KopsModelContext{
-		IAMModelContext: iam.IAMModelContext{Cluster: cluster},
-		InstanceGroups:  c.InstanceGroups,
+		IAMModelContext:   iam.IAMModelContext{Cluster: cluster},
+		InstanceGroups:    c.InstanceGroups,
+		AdditionalObjects: c.AdditionalObjects,
 	}
 
 	switch cluster.Spec.GetCloudProvider() {
@@ -408,9 +430,7 @@ func (c *ApplyClusterCmd) Run(ctx context.Context) error {
 
 	case kops.CloudProviderHetzner:
 		{
-			if !featureflag.Hetzner.Enabled() {
-				return fmt.Errorf("Hetzner Cloud support is currently alpha, and is feature-gated.  export KOPS_FEATURE_FLAGS=Hetzner")
-			}
+			// Hetzner Cloud support is currently in beta
 		}
 
 	case kops.CloudProviderDO:
@@ -473,7 +493,7 @@ func (c *ApplyClusterCmd) Run(ctx context.Context) error {
 	modelContext.Region = cloud.Region()
 
 	if dns.IsGossipHostname(cluster.ObjectMeta.Name) {
-		klog.Infof("Gossip DNS: skipping DNS validation")
+		klog.V(2).Infof("Gossip DNS: skipping DNS validation")
 	} else {
 		err = validateDNS(cluster, cloud)
 		if err != nil {
@@ -530,6 +550,11 @@ func (c *ApplyClusterCmd) Run(ctx context.Context) error {
 				Cluster:          cluster,
 			},
 			&kubeapiserver.KubeApiserverBuilder{
+				AssetBuilder:     assetBuilder,
+				KopsModelContext: modelContext,
+				Lifecycle:        clusterLifecycle,
+			},
+			&kubescheduler.KubeSchedulerBuilder{
 				AssetBuilder:     assetBuilder,
 				KopsModelContext: modelContext,
 				Lifecycle:        clusterLifecycle,
@@ -606,7 +631,6 @@ func (c *ApplyClusterCmd) Run(ctx context.Context) error {
 				KopsModelContext: modelContext,
 			}
 			l.Builders = append(l.Builders,
-				&hetznermodel.SSHKeyModelBuilder{HetznerModelContext: hetznerModelContext, Lifecycle: securityLifecycle},
 				&hetznermodel.NetworkModelBuilder{HetznerModelContext: hetznerModelContext, Lifecycle: networkLifecycle},
 				&hetznermodel.ExternalAccessModelBuilder{HetznerModelContext: hetznerModelContext, Lifecycle: networkLifecycle},
 				&hetznermodel.LoadBalancerModelBuilder{HetznerModelContext: hetznerModelContext, Lifecycle: networkLifecycle},
@@ -1133,7 +1157,7 @@ type nodeUpConfigBuilder struct {
 	channels                   []string
 	configBase                 vfs.Path
 	cluster                    *kops.Cluster
-	etcdManifests              map[kops.InstanceGroupRole][]string
+	etcdManifests              map[string][]string
 	images                     map[kops.InstanceGroupRole]map[architectures.Architecture][]*nodeup.Image
 	protokubeAsset             map[architectures.Architecture][]*mirrors.MirroredAsset
 	channelsAsset              map[architectures.Architecture][]*mirrors.MirroredAsset
@@ -1154,7 +1178,7 @@ func newNodeUpConfigBuilder(cluster *kops.Cluster, assetBuilder *assets.AssetBui
 		channels = append(channels, cluster.Spec.Addons[i].Manifest)
 	}
 
-	etcdManifests := map[kops.InstanceGroupRole][]string{}
+	etcdManifests := map[string][]string{}
 	images := map[kops.InstanceGroupRole]map[architectures.Architecture][]*nodeup.Image{}
 	protokubeAsset := map[architectures.Architecture][]*mirrors.MirroredAsset{}
 	channelsAsset := map[architectures.Architecture][]*mirrors.MirroredAsset{}
@@ -1264,8 +1288,11 @@ func newNodeUpConfigBuilder(cluster *kops.Cluster, assetBuilder *assets.AssetBui
 
 		if isMaster {
 			for _, etcdCluster := range cluster.Spec.EtcdClusters {
-				p := configBase.Join("manifests/etcd/" + etcdCluster.Name + ".yaml").Path()
-				etcdManifests[role] = append(etcdManifests[role], p)
+				for _, member := range etcdCluster.Members {
+					instanceGroup := fi.StringValue(member.InstanceGroup)
+					etcdManifest := fmt.Sprintf("manifests/etcd/%s-%s.yaml", etcdCluster.Name, instanceGroup)
+					etcdManifests[instanceGroup] = append(etcdManifests[instanceGroup], configBase.Join(etcdManifest).Path())
+				}
 			}
 		}
 	}
@@ -1429,9 +1456,27 @@ func (n *nodeUpConfigBuilder) BuildConfig(ig *kops.InstanceGroup, apiserverAddit
 		})
 	}
 
+	for _, staticFile := range n.assetBuilder.StaticFiles {
+		match := false
+		for _, r := range staticFile.Roles {
+			if r == role {
+				match = true
+			}
+		}
+
+		if !match {
+			continue
+		}
+
+		config.FileAssets = append(config.FileAssets, kops.FileAssetSpec{
+			Content: staticFile.Content,
+			Path:    staticFile.Path,
+		})
+	}
+
 	config.Images = n.images[role]
 	config.Channels = n.channels
-	config.EtcdManifests = n.etcdManifests[role]
+	config.EtcdManifests = n.etcdManifests[ig.Name]
 
 	if ig.Spec.Containerd != nil || cluster.Spec.ContainerRuntime == "containerd" {
 		config.ContainerdConfig = n.buildContainerdConfig(ig)

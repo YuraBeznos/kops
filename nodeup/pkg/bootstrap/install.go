@@ -153,6 +153,14 @@ func (i *Installation) buildEnvFile() *nodetasks.File {
 		envVars["AZURE_STORAGE_ACCOUNT"] = os.Getenv("AZURE_STORAGE_ACCOUNT")
 	}
 
+	if os.Getenv("SCW_SECRET_KEY") != "" {
+		envVars["SCW_ACCESS_KEY"] = os.Getenv("SCW_ACCESS_KEY")
+		envVars["SCW_SECRET_KEY"] = os.Getenv("SCW_SECRET_KEY")
+		envVars["SCW_DEFAULT_PROJECT_ID"] = os.Getenv("SCW_DEFAULT_PROJECT_ID")
+		envVars["SCW_DEFAULT_REGION"] = os.Getenv("SCW_DEFAULT_REGION")
+		envVars["SCW_DEFAULT_ZONE"] = os.Getenv("SCW_DEFAULT_ZONE")
+	}
+
 	if os.Getenv("YANDEX_CLOUD_CREDENTIAL_FILE") != "" {
 		envVars["YANDEX_CLOUD_CREDENTIAL_FILE"] = os.Getenv("YANDEX_CLOUD_CREDENTIAL_FILE")
 	}

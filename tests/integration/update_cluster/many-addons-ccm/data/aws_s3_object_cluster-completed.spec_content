@@ -24,7 +24,7 @@ spec:
     clusterCIDR: 172.20.0.0/16
     clusterName: minimal.example.com
     configureCloudRoutes: false
-    image: registry.k8s.io/provider-aws/cloud-controller-manager:v1.21.0
+    image: registry.k8s.io/provider-aws/cloud-controller-manager:v1.21.3
     leaderElection:
       leaderElect: true
   cloudProvider: aws
@@ -33,7 +33,7 @@ spec:
     balanceSimilarNodeGroups: false
     enabled: true
     expander: random
-    image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.21.2
+    image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.21.3
     maxNodeProvisionTime: 15m0s
     newPodScaleUpDelay: 0s
     scaleDownDelayAfterAdd: 10m0s
@@ -140,7 +140,7 @@ spec:
     nodeLocalDNS:
       cpuRequest: 25m
       enabled: false
-      image: registry.k8s.io/dns/k8s-dns-node-cache:1.21.3
+      image: registry.k8s.io/dns/k8s-dns-node-cache:1.22.8
       memoryRequest: 5Mi
     provider: CoreDNS
     serverIP: 172.20.0.10
@@ -215,7 +215,7 @@ spec:
     managedASGTag: aws-node-termination-handler/managed
     memoryRequest: 64Mi
     prometheusEnable: false
-    version: v1.16.5
+    version: v1.17.1
   nonMasqueradeCIDR: 172.20.0.0/16
   podCIDR: 172.20.128.0/17
   secretStore: memfs://clusters.example.com/minimal.example.com/secrets

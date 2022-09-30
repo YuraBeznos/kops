@@ -220,6 +220,13 @@ CAs:
     9B7UD2ushcVFPtaeoL9Gfu8aY4KJBeqqg5ojl4qmRnThjw==
     -----END CERTIFICATE-----
 ClusterName: ha-gce.example.com
+FileAssets:
+- content: |
+    apiVersion: kubescheduler.config.k8s.io/v1beta1
+    clientConnection:
+      kubeconfig: /var/lib/kube-scheduler/kubeconfig
+    kind: KubeSchedulerConfiguration
+  path: /var/lib/kube-scheduler/config.yaml
 Hooks:
 - null
 - null
@@ -263,8 +270,8 @@ containerdConfig:
   logLevel: info
   version: 1.4.13
 etcdManifests:
-- memfs://tests/ha-gce.example.com/manifests/etcd/main.yaml
-- memfs://tests/ha-gce.example.com/manifests/etcd/events.yaml
+- memfs://tests/ha-gce.example.com/manifests/etcd/main-master-us-test1-a.yaml
+- memfs://tests/ha-gce.example.com/manifests/etcd/events-master-us-test1-a.yaml
 staticManifests:
 - key: kube-apiserver-healthcheck
   path: manifests/static/kube-apiserver-healthcheck.yaml

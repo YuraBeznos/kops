@@ -58,18 +58,18 @@ resource "aws_s3_object" "kops-version-txt" {
   server_side_encryption = "AES256"
 }
 
-resource "aws_s3_object" "manifests-etcdmanager-events" {
+resource "aws_s3_object" "manifests-etcdmanager-events-master-us-test1-a" {
   bucket                 = "testingBucket"
-  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-events_content")
-  key                    = "tests/minimal-gce-private.example.com/manifests/etcd/events.yaml"
+  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-events-master-us-test1-a_content")
+  key                    = "tests/minimal-gce-private.example.com/manifests/etcd/events-master-us-test1-a.yaml"
   provider               = aws.files
   server_side_encryption = "AES256"
 }
 
-resource "aws_s3_object" "manifests-etcdmanager-main" {
+resource "aws_s3_object" "manifests-etcdmanager-main-master-us-test1-a" {
   bucket                 = "testingBucket"
-  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-main_content")
-  key                    = "tests/minimal-gce-private.example.com/manifests/etcd/main.yaml"
+  content                = file("${path.module}/data/aws_s3_object_manifests-etcdmanager-main-master-us-test1-a_content")
+  key                    = "tests/minimal-gce-private.example.com/manifests/etcd/main-master-us-test1-a.yaml"
   provider               = aws.files
   server_side_encryption = "AES256"
 }
@@ -436,7 +436,7 @@ resource "google_compute_instance_template" "master-us-test1-a-minimal-gce-priva
   metadata = {
     "cluster-name"                    = "minimal-gce-private.example.com"
     "kops-k8s-io-instance-group-name" = "master-us-test1-a"
-    "ssh-keys"                        = file("${path.module}/data/google_compute_instance_template_master-us-test1-a-minimal-gce-private-example-com_metadata_ssh-keys")
+    "ssh-keys"                        = "admin: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQCtWu40XQo8dczLsCq0OWV+hxm9uV3WxeH9Kgh4sMzQxNtoU1pvW0XdjpkBesRKGoolfWeCLXWxpyQb1IaiMkKoz7MdhQ/6UKjMjP66aFWWp3pwD0uj0HuJ7tq4gKHKRYGTaZIRWpzUiANBrjugVgA+Sd7E/mYwc/DMXkIyRZbvhQ=="
     "startup-script"                  = file("${path.module}/data/google_compute_instance_template_master-us-test1-a-minimal-gce-private-example-com_metadata_startup-script")
   }
   name_prefix = "master-us-test1-a-minimal-asf34c-"
@@ -481,7 +481,7 @@ resource "google_compute_instance_template" "nodes-minimal-gce-private-example-c
   metadata = {
     "cluster-name"                    = "minimal-gce-private.example.com"
     "kops-k8s-io-instance-group-name" = "nodes"
-    "ssh-keys"                        = file("${path.module}/data/google_compute_instance_template_nodes-minimal-gce-private-example-com_metadata_ssh-keys")
+    "ssh-keys"                        = "admin: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQCtWu40XQo8dczLsCq0OWV+hxm9uV3WxeH9Kgh4sMzQxNtoU1pvW0XdjpkBesRKGoolfWeCLXWxpyQb1IaiMkKoz7MdhQ/6UKjMjP66aFWWp3pwD0uj0HuJ7tq4gKHKRYGTaZIRWpzUiANBrjugVgA+Sd7E/mYwc/DMXkIyRZbvhQ=="
     "startup-script"                  = file("${path.module}/data/google_compute_instance_template_nodes-minimal-gce-private-example-com_metadata_startup-script")
   }
   name_prefix = "nodes-minimal-gce-private-4aopo5-"

@@ -428,8 +428,7 @@
                 }
               ]
             }
-          ],
-          "UserData": "extracted"
+          ]
         }
       }
     },
@@ -1287,6 +1286,14 @@
             "Value": "Private"
           },
           {
+            "Key": "kops.k8s.io/instance-group/master-us-test-1a",
+            "Value": "true"
+          },
+          {
+            "Key": "kops.k8s.io/instance-group/nodes",
+            "Value": "true"
+          },
+          {
             "Key": "kubernetes.io/cluster/privateciliumadvanced.example.com",
             "Value": "owned"
           },
@@ -1317,6 +1324,10 @@
           {
             "Key": "SubnetType",
             "Value": "Utility"
+          },
+          {
+            "Key": "kops.k8s.io/instance-group/bastion",
+            "Value": "true"
           },
           {
             "Key": "kubernetes.io/cluster/privateciliumadvanced.example.com",
@@ -1825,6 +1836,7 @@
                 "autoscaling:DescribeAutoScalingGroups",
                 "autoscaling:DescribeAutoScalingInstances",
                 "autoscaling:DescribeLaunchConfigurations",
+                "autoscaling:DescribeScalingActivities",
                 "autoscaling:DescribeTags",
                 "ec2:AssignPrivateIpAddresses",
                 "ec2:AttachNetworkInterface",
@@ -1860,12 +1872,14 @@
                 "elasticloadbalancing:AddTags",
                 "elasticloadbalancing:CreateListener",
                 "elasticloadbalancing:CreateTargetGroup",
+                "elasticloadbalancing:DeleteListener",
                 "elasticloadbalancing:DescribeListeners",
                 "elasticloadbalancing:DescribeLoadBalancerAttributes",
                 "elasticloadbalancing:DescribeLoadBalancerPolicies",
                 "elasticloadbalancing:DescribeLoadBalancers",
                 "elasticloadbalancing:DescribeTargetGroups",
                 "elasticloadbalancing:DescribeTargetHealth",
+                "elasticloadbalancing:ModifyListener",
                 "elasticloadbalancing:RegisterTargets",
                 "iam:GetServerCertificate",
                 "iam:ListServerCertificates",

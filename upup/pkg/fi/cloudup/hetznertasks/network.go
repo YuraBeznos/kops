@@ -18,6 +18,7 @@ package hetznertasks
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -25,6 +26,8 @@ import (
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"k8s.io/kops/upup/pkg/fi"
 	"k8s.io/kops/upup/pkg/fi/cloudup/hetzner"
+	"k8s.io/kops/upup/pkg/fi/cloudup/terraform"
+	"k8s.io/kops/upup/pkg/fi/cloudup/terraformWriter"
 )
 
 // +kops:fitask
@@ -32,7 +35,7 @@ type Network struct {
 	Name      *string
 	Lifecycle fi.Lifecycle
 
-	ID      *int
+	ID      *string
 	Region  string
 	IPRange string
 	Subnets []string
@@ -43,41 +46,53 @@ type Network struct {
 var _ fi.CompareWithID = &Network{}
 
 func (v *Network) CompareWithID() *string {
-	return fi.String(strconv.Itoa(fi.IntValue(v.ID)))
+	return v.ID
 }
 
 func (v *Network) Find(c *fi.Context) (*Network, error) {
 	cloud := c.Cloud.(hetzner.HetznerCloud)
 	client := cloud.NetworkClient()
 
-	// TODO(hakman): Find using label selector
-	networks, err := client.All(context.TODO())
+	idOrName := fi.StringValue(v.Name)
+	if v.ID != nil {
+		idOrName = fi.StringValue(v.ID)
+	}
+
+	network, _, err := client.Get(context.TODO(), idOrName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to find network %q: %w", idOrName, err)
 	}
-
-	for _, network := range networks {
-		if network.Name == fi.StringValue(v.Name) {
-			matches := &Network{
-				Name:      fi.String(network.Name),
-				Lifecycle: v.Lifecycle,
-				ID:        fi.Int(network.ID),
-				IPRange:   network.IPRange.String(),
-				Labels:    network.Labels,
-			}
-			matches.Region = v.Region
-			for _, subnet := range network.Subnets {
-				if subnet.IPRange != nil {
-					matches.Region = string(subnet.NetworkZone)
-					matches.Subnets = append(matches.Subnets, subnet.IPRange.String())
-				}
-			}
-			v.ID = matches.ID
-			return matches, nil
+	if network == nil {
+		if v.ID != nil {
+			return nil, fmt.Errorf("failed to find network %q", idOrName)
 		}
+		return nil, nil
 	}
 
-	return nil, nil
+	matches := &Network{
+		Name:      v.Name,
+		Lifecycle: v.Lifecycle,
+		ID:        fi.String(strconv.Itoa(network.ID)),
+	}
+
+	if v.ID == nil {
+		matches.IPRange = network.IPRange.String()
+		matches.Labels = network.Labels
+		matches.Region = v.Region
+		for _, subnet := range network.Subnets {
+			if subnet.IPRange != nil {
+				matches.Region = string(subnet.NetworkZone)
+				matches.Subnets = append(matches.Subnets, subnet.IPRange.String())
+			}
+		}
+		// Make sure the ID is set (used by other tasks)
+		v.ID = matches.ID
+	} else {
+		// Make sure the ID is numerical
+		v.ID = matches.ID
+	}
+
+	return matches, nil
 }
 
 func (v *Network) Run(c *fi.Context) error {
@@ -136,7 +151,7 @@ func (_ *Network) RenderHetzner(t *hetzner.HetznerAPITarget, a, e, changes *Netw
 		if err != nil {
 			return err
 		}
-		e.ID = fi.Int(network.ID)
+		e.ID = fi.String(strconv.Itoa(network.ID))
 
 	} else {
 		var err error
@@ -187,4 +202,57 @@ func (_ *Network) RenderHetzner(t *hetzner.HetznerAPITarget, a, e, changes *Netw
 	}
 
 	return nil
+}
+
+type terraformNetwork struct {
+	Name    *string           `cty:"name"`
+	IPRange *string           `cty:"ip_range"`
+	Labels  map[string]string `cty:"labels"`
+}
+
+type terraformNetworkSubnet struct {
+	NetworkID   *terraformWriter.Literal `cty:"network_id"`
+	Type        *string                  `cty:"type"`
+	NetworkZone *string                  `cty:"network_zone"`
+	IPRange     *string                  `cty:"ip_range"`
+}
+
+func (_ *Network) RenderTerraform(t *terraform.TerraformTarget, a, e, changes *Network) error {
+	{
+		tf := &terraformNetwork{
+			Name:    e.Name,
+			IPRange: fi.String(e.IPRange),
+			Labels:  e.Labels,
+		}
+
+		err := t.RenderResource("hcloud_network", *e.Name, tf)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, subnet := range e.Subnets {
+		_, subnetIpRange, err := net.ParseCIDR(subnet)
+		if err != nil {
+			return err
+		}
+
+		tf := &terraformNetworkSubnet{
+			NetworkID:   e.TerraformLink(),
+			Type:        fi.String(string(hcloud.NetworkSubnetTypeCloud)),
+			IPRange:     fi.String(subnetIpRange.String()),
+			NetworkZone: fi.String(e.Region),
+		}
+
+		err = t.RenderResource("hcloud_network_subnet", *e.Name+"-"+subnet, tf)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e *Network) TerraformLink() *terraformWriter.Literal {
+	return terraformWriter.LiteralProperty("hcloud_network", *e.Name, "id")
 }

@@ -874,6 +874,8 @@ func AddLegacyCCMPermissions(p *Policy) {
 		"elasticloadbalancing:AddTags",
 		"elasticloadbalancing:RegisterTargets",
 		"elasticloadbalancing:CreateListener",
+		"elasticloadbalancing:DeleteListener",
+		"elasticloadbalancing:ModifyListener",
 		"ec2:DescribeVolumes",
 		"ec2:ModifyInstanceAttribute",
 		"ec2:ModifyVolume",
@@ -967,6 +969,7 @@ func AddAWSLoadbalancerControllerPermissions(p *Policy, enableWAF, enableWAFv2, 
 		"ec2:DescribeNetworkInterfaces",
 		"ec2:DescribeSubnets",
 		"ec2:DescribeSecurityGroups",
+		"ec2:DescribeVpcPeeringConnections",
 		"ec2:DescribeVpcs",
 		"ec2:DescribeAccountAttributes",
 
@@ -1057,6 +1060,7 @@ func AddClusterAutoscalerPermissions(p *Policy, useStaticInstanceList bool) {
 		"autoscaling:DescribeAutoScalingGroups",
 		"autoscaling:DescribeAutoScalingInstances",
 		"autoscaling:DescribeLaunchConfigurations",
+		"autoscaling:DescribeScalingActivities",
 		"ec2:DescribeLaunchTemplateVersions",
 	)
 	if !useStaticInstanceList {

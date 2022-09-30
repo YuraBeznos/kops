@@ -173,6 +173,12 @@ func (tf *TemplateFunctions) AddTo(dest template.FuncMap, secretStore fi.SecretS
 	dest["HCLOUD_TOKEN"] = func() string {
 		return os.Getenv("HCLOUD_TOKEN")
 	}
+	dest["HCLOUD_NETWORK"] = func() string {
+		if cluster.Spec.NetworkID != "" {
+			return cluster.Spec.NetworkID
+		}
+		return cluster.Name
+	}
 
 	dest["YANDEX_CLOUD_CREDENTIAL_FILE"] = func() string {
 		return os.Getenv("YANDEX_CLOUD_CREDENTIAL_FILE")
@@ -448,7 +454,9 @@ func (tf *TemplateFunctions) CloudControllerConfigArgv() ([]string, error) {
 		argv = append(argv, fmt.Sprintf("--use-service-account-credentials=%t", true))
 	}
 
-	argv = append(argv, "--cloud-config=/etc/kubernetes/cloud.config")
+	if cluster.Spec.GetCloudProvider() != kops.CloudProviderHetzner {
+		argv = append(argv, "--cloud-config=/etc/kubernetes/cloud.config")
+	}
 
 	return argv, nil
 }
@@ -888,6 +896,7 @@ func karpenterInstanceTypes(cloud awsup.AWSCloud, ig kops.InstanceGroupSpec) ([]
 				VCpuCount:            &ec2.VCpuCountRangeRequest{},
 				MemoryMiB:            &ec2.MemoryMiBRequest{},
 				BurstablePerformance: fi.String("included"),
+				InstanceGenerations:  []*string{fi.String("current")},
 			}
 			cpu := instanceRequirements.CPU
 			if cpu != nil {

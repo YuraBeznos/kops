@@ -312,7 +312,7 @@ func (c *MockAWSCloud) GetApiIngressStatus(cluster *kops.Cluster) ([]fi.ApiIngre
 // DefaultInstanceType determines an instance type for the specified cluster & instance group
 func (c *MockAWSCloud) DefaultInstanceType(cluster *kops.Cluster, ig *kops.InstanceGroup) (string, error) {
 	switch ig.Spec.Role {
-	case kops.InstanceGroupRoleMaster:
+	case kops.InstanceGroupRoleMaster, kops.InstanceGroupRoleAPIServer:
 		return "m3.medium", nil
 	case kops.InstanceGroupRoleNode:
 		return "t2.medium", nil
@@ -358,7 +358,7 @@ func (c *MockAWSCloud) DescribeInstanceType(instanceType string) (*ec2.InstanceT
 				aws.String(ec2.ArchitectureTypeX8664),
 			},
 		}
-	case "a1.large":
+	case "a1.large", "m6g.xlarge":
 		info.ProcessorInfo = &ec2.ProcessorInfo{
 			SupportedArchitectures: []*string{
 				aws.String(ec2.ArchitectureTypeArm64),

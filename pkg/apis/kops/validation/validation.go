@@ -290,9 +290,6 @@ func validateClusterSpec(spec *kops.ClusterSpec, c *kops.Cluster, fieldPath *fie
 		}
 
 		if len(spec.IAM.ServiceAccountExternalPermissions) > 0 {
-			if spec.ServiceAccountIssuerDiscovery == nil || !spec.ServiceAccountIssuerDiscovery.EnableAWSOIDCProvider {
-				allErrs = append(allErrs, field.Forbidden(fieldPath.Child("iam", "serviceAccountExternalPermissions"), "serviceAccountExternalPermissions requires AWS OIDC Provider to be enabled"))
-			}
 			allErrs = append(allErrs, validateSAExternalPermissions(spec.IAM.ServiceAccountExternalPermissions, fieldPath.Child("iam", "serviceAccountExternalPermissions"))...)
 		}
 	}
@@ -305,6 +302,9 @@ func validateClusterSpec(spec *kops.ClusterSpec, c *kops.Cluster, fieldPath *fie
 
 	if spec.PodIdentityWebhook != nil && spec.PodIdentityWebhook.Enabled {
 		allErrs = append(allErrs, validatePodIdentityWebhook(c, spec.PodIdentityWebhook, fieldPath.Child("podIdentityWebhook"))...)
+	}
+	if spec.CertManager != nil && fi.BoolValue(spec.CertManager.Enabled) {
+		allErrs = append(allErrs, validateCertManager(c, spec.CertManager, fieldPath.Child("certManager"))...)
 	}
 
 	return allErrs
@@ -594,6 +594,20 @@ func validateKubeAPIServer(v *kops.KubeAPIServerConfig, c *kops.Cluster, fldPath
 		}
 	}
 
+	for _, plugin := range v.EnableAdmissionPlugins {
+		if plugin == "PodSecurityPolicy" && c.IsKubernetesGTE("1.25") {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("enableAdmissionPlugins"),
+				"PodSecurityPolicy has been removed from Kubernetes 1.25"))
+		}
+	}
+
+	for _, plugin := range v.AdmissionControl {
+		if plugin == "PodSecurityPolicy" && c.IsKubernetesGTE("1.25") {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("admissionControl"),
+				"PodSecurityPolicy has been removed from Kubernetes 1.25"))
+		}
+	}
+
 	proxyClientCertIsNil := v.ProxyClientCertFile == nil
 	proxyClientKeyIsNil := v.ProxyClientKeyFile == nil
 
@@ -643,11 +657,10 @@ func validateKubeAPIServer(v *kops.KubeAPIServerConfig, c *kops.Cluster, fldPath
 
 	if v.InsecurePort != nil {
 		insecurePort := *v.InsecurePort
-		if c.IsKubernetesGTE("1.20") && insecurePort != 0 {
-			field.Forbidden(fldPath.Child("insecurePort"), "insecurePort can only be 0 as of Kubernetes 1.20")
-		}
 		if c.IsKubernetesGTE("1.24") {
 			field.Forbidden(fldPath.Child("insecurePort"), "insecurePort must not be set as of Kubernetes 1.24")
+		} else if insecurePort != 0 {
+			field.Forbidden(fldPath.Child("insecurePort"), "insecurePort can only be 0 or nil")
 		}
 	}
 
@@ -721,9 +734,7 @@ func validateKubelet(k *kops.KubeletConfigSpec, c *kops.Cluster, kubeletPath *fi
 		}
 
 		if k.EnableCadvisorJsonEndpoints != nil {
-			if c.IsKubernetesGTE("1.21") {
-				allErrs = append(allErrs, field.Forbidden(kubeletPath.Child("enableCadvisorJsonEndpoints"), "enableCadvisorJsonEndpoints requires Kubernetes 1.18-1.20"))
-			}
+			allErrs = append(allErrs, field.Forbidden(kubeletPath.Child("enableCadvisorJsonEndpoints"), "enableCadvisorJsonEndpoints requires Kubernetes 1.18-1.20"))
 		}
 
 		if k.LogFormat != "" {
@@ -731,9 +742,7 @@ func validateKubelet(k *kops.KubeletConfigSpec, c *kops.Cluster, kubeletPath *fi
 		}
 
 		if k.CPUCFSQuotaPeriod != nil {
-			if c.IsKubernetesGTE("1.20") {
-				allErrs = append(allErrs, field.Forbidden(kubeletPath.Child("cpuCFSQuotaPeriod"), "cpuCFSQuotaPeriod has been removed on Kubernetes >=1.20"))
-			}
+			allErrs = append(allErrs, field.Forbidden(kubeletPath.Child("cpuCFSQuotaPeriod"), "cpuCFSQuotaPeriod has been removed on Kubernetes >=1.20"))
 		}
 
 		if c.IsKubernetesGTE("1.24") {
@@ -1666,9 +1675,6 @@ func validateWarmPool(warmPool *kops.WarmPoolSpec, fldPath *field.Path) (allErrs
 
 func validateSnapshotController(cluster *kops.Cluster, spec *kops.SnapshotControllerConfig, fldPath *field.Path) (allErrs field.ErrorList) {
 	if spec != nil && fi.BoolValue(spec.Enabled) {
-		if !cluster.IsKubernetesGTE("1.20") {
-			allErrs = append(allErrs, field.Forbidden(fldPath.Child("enabled"), "Snapshot controller requires kubernetes 1.20+"))
-		}
 		if !components.IsCertManagerEnabled(cluster) {
 			allErrs = append(allErrs, field.Forbidden(fldPath.Child("enabled"), "Snapshot controller requires that cert manager is enabled"))
 		}
@@ -1683,5 +1689,14 @@ func validatePodIdentityWebhook(cluster *kops.Cluster, spec *kops.PodIdentityWeb
 		}
 	}
 
+	return allErrs
+}
+
+func validateCertManager(cluster *kops.Cluster, spec *kops.CertManagerConfig, fldPath *field.Path) (allErrs field.ErrorList) {
+	if len(spec.HostedZoneIDs) > 0 {
+		if !fi.BoolValue(cluster.Spec.IAM.UseServiceAccountExternalPermissions) {
+			allErrs = append(allErrs, field.Forbidden(fldPath, "Cert Manager requires that service accounts use external permissions in order to do dns-01 validation"))
+		}
+	}
 	return allErrs
 }

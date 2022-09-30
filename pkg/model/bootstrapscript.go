@@ -31,6 +31,7 @@ import (
 	"k8s.io/kops/upup/pkg/fi/utils"
 	"sigs.k8s.io/yaml"
 
+	"github.com/scaleway/scaleway-sdk-go/scw"
 	"k8s.io/kops/pkg/apis/kops"
 	"k8s.io/kops/pkg/apis/nodeup"
 	"k8s.io/kops/pkg/model/resources"
@@ -86,7 +87,8 @@ func (b *BootstrapScript) kubeEnv(ig *kops.InstanceGroup, c *fi.Context) (string
 			return "", fmt.Errorf("error finding address for %v: %v", hasAddress, err)
 		}
 		if len(addresses) == 0 {
-			klog.Warningf("Task did not have an address: %v", hasAddress)
+			// Such tasks won't have an address in dry-run mode, until the resource is created
+			klog.V(2).Infof("Task did not have an address: %v", hasAddress)
 			continue
 		}
 		for _, address := range addresses {
@@ -212,6 +214,39 @@ func (b *BootstrapScript) buildEnvironmentVariables(cluster *kops.Cluster) (map[
 		}
 	}
 
+	if cluster.Spec.GetCloudProvider() == kops.CloudProviderScaleway {
+
+		region, err := scw.ParseRegion(os.Getenv("SCW_DEFAULT_REGION"))
+		if err != nil {
+			return nil, fmt.Errorf("error parsing SCW_DEFAULT_REGION: %w", err)
+		}
+		env["SCW_DEFAULT_REGION"] = string(region)
+
+		zone, err := scw.ParseZone(os.Getenv("SCW_DEFAULT_ZONE"))
+		if err != nil {
+			return nil, fmt.Errorf("error parsing SCW_DEFAULT_ZONE: %w", err)
+		}
+		env["SCW_DEFAULT_ZONE"] = string(zone)
+
+		scwAccessKey := os.Getenv("SCW_ACCESS_KEY")
+		if scwAccessKey == "" {
+			return nil, fmt.Errorf("SCW_ACCESS_KEY has to be set as an environment variable")
+		}
+		env["SCW_ACCESS_KEY"] = scwAccessKey
+
+		scwSecretKey := os.Getenv("SCW_SECRET_KEY")
+		if scwSecretKey != "" {
+			return nil, fmt.Errorf("SCW_SECRET_KEY has to be set as an environment variable")
+		}
+		env["SCW_SECRET_KEY"] = scwSecretKey
+
+		scwProjectID := os.Getenv("SCW_DEFAULT_PROJECT_ID")
+		if scwProjectID != "" {
+			return nil, fmt.Errorf("SCW_DEFAULT_PROJECT_ID has to be set as an environment variable")
+		}
+		env["SCW_DEFAULT_PROJECT_ID"] = scwProjectID
+	}
+
 	if cluster.Spec.GetCloudProvider() == kops.CloudProviderYandex {
 		yandexcloudCredentialFile := os.Getenv("YANDEX_CLOUD_CREDENTIAL_FILE")
 		if yandexcloudCredentialFile != "" {
@@ -251,7 +286,7 @@ func (b *BootstrapScriptBuilder) ResourceNodeUp(c *fi.ModelBuilderContext, ig *k
 
 		// Bastions can have AdditionalUserData, but if there isn't any skip this part
 		if len(ig.Spec.AdditionalUserData) == 0 {
-			return fi.NewStringResource(""), nil
+			return nil, nil
 		}
 	}
 

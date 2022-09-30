@@ -22,11 +22,30 @@ if [ -z "${KOPS_VERSION_A-}" ] || [ -z "${K8S_VERSION_A-}" ] || [ -z "${KOPS_VER
   exit 1
 fi
 
+TEST_PACKAGE_VERSION="${K8S_VERSION_B}"
+
 if [[ "$K8S_VERSION_A" == "latest" ]]; then
   K8S_VERSION_A=$(curl https://storage.googleapis.com/kubernetes-release/release/latest.txt)
 fi
 if [[ "$K8S_VERSION_B" == "latest" ]]; then
   K8S_VERSION_B=$(curl https://storage.googleapis.com/kubernetes-release/release/latest.txt)
+  TEST_PACKAGE_MARKER="latest.txt"
+fi
+if [[ "$K8S_VERSION_A" == "stable" ]]; then
+  K8S_VERSION_A=$(curl https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+fi
+if [[ "$K8S_VERSION_B" == "stable" ]]; then
+  K8S_VERSION_B=$(curl https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+  TEST_PACKAGE_MARKER="stable.txt"
+fi
+if [[ "$K8S_VERSION_A" == "ci" ]]; then
+  K8S_VERSION_A=https://storage.googleapis.com/k8s-release-dev/ci/$(curl https://storage.googleapis.com/k8s-release-dev/ci/latest.txt)
+fi
+if [[ "$K8S_VERSION_B" == "ci" ]]; then
+  K8S_VERSION_B=https://storage.googleapis.com/k8s-release-dev/ci/$(curl https://storage.googleapis.com/k8s-release-dev/ci/latest.txt)
+  TEST_PACKAGE_MARKER="latest.txt"
+  TEST_PACKAGE_DIR="ci"
+  TEST_PACKAGE_BUCKET="k8s-release-dev"
 fi
 
 export KOPS_BASE_URL
@@ -115,10 +134,26 @@ if [[ -n ${KOPS_SKIP_E2E:-} ]]; then
   exit
 fi
 
+
+test_package_args="--parallel 25"
+
+if [[ -n ${TEST_PACKAGE_MARKER-} ]]; then
+  test_package_args+=" --test-package-marker=${TEST_PACKAGE_MARKER}"
+  if [[ -n ${TEST_PACKAGE_DIR-} ]]; then
+    test_package_args+=" --test-package-dir=${TEST_PACKAGE_DIR-}"
+  fi
+  if [[ -n ${TEST_PACKAGE_BUCKET-} ]]; then
+    test_package_args+=" --test-package-bucket=${TEST_PACKAGE_BUCKET-}"
+  fi
+else
+  test_package_args+=" --test-package-version=${TEST_PACKAGE_VERSION}"
+fi
+
+# shellcheck disable=SC2086
 ${KUBETEST2} \
     --cloud-provider="${CLOUD_PROVIDER}" \
     --kops-binary-path="${KOPS}" \
     --test=kops \
     -- \
-    --test-package-version="${K8S_VERSION_B}" \
+    $test_package_args \
     --parallel 25

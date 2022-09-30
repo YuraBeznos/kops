@@ -238,6 +238,8 @@ type CloudProviderSpec struct {
 	Hetzner *HetznerSpec `json:"hetzner,omitempty"`
 	// Openstack configures the Openstack cloud provider.
 	Openstack *OpenstackSpec `json:"openstack,omitempty"`
+	// Scaleway configures the Scaleway cloud provider.
+	Scaleway *ScalewaySpec `json:"scaleway,omitempty"`
 	// Yandex configures the Yandex cloud provider.
 	Yandex *YandexSpec `json:"yandex,omitempty"`
 }
@@ -256,6 +258,10 @@ type GCESpec struct {
 
 // HetznerSpec configures the Hetzner cloud provider.
 type HetznerSpec struct {
+}
+
+// ScalewaySpec configures the Scaleway cloud provider
+type ScalewaySpec struct {
 }
 
 // YandexSpec configures the Yandex cloud provider.
@@ -456,9 +462,9 @@ type AccessLogSpec struct {
 	// Interval is publishing interval in minutes. This parameter is only used with classic load balancer.
 	Interval int `json:"interval,omitempty"`
 	// Bucket is S3 bucket name to store the logs in
-	Bucket string `json:"bucket,omitempty"`
+	Bucket *string `json:"bucket,omitempty"`
 	// BucketPrefix is S3 bucket prefix. Logs are stored in the root if not configured.
-	BucketPrefix string `json:"bucketPrefix,omitempty"`
+	BucketPrefix *string `json:"bucketPrefix,omitempty"`
 }
 
 var SupportedLoadBalancerClasses = []string{

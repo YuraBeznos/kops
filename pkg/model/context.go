@@ -21,10 +21,12 @@ import (
 	"net"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kops/pkg/apis/kops"
 	"k8s.io/kops/pkg/apis/kops/model"
 	"k8s.io/kops/pkg/apis/kops/util"
 	"k8s.io/kops/pkg/dns"
+	"k8s.io/kops/pkg/kubemanifest"
 	"k8s.io/kops/pkg/model/components"
 	"k8s.io/kops/pkg/model/iam"
 	nodeidentityaws "k8s.io/kops/pkg/nodeidentity/aws"
@@ -48,6 +50,9 @@ type KopsModelContext struct {
 	InstanceGroups []*kops.InstanceGroup
 	Region         string
 	SSHPublicKeys  [][]byte
+
+	// AdditionalObjects holds cluster-asssociated configuration objects, other than the Cluster and InstanceGroups.
+	AdditionalObjects kubemanifest.ObjectList
 }
 
 // GatherSubnets maps the subnet names in an InstanceGroup to the ClusterSubnetSpec objects (which are stored on the Cluster)
@@ -183,6 +188,13 @@ func (b *KopsModelContext) CloudTagsForInstanceGroup(ig *kops.InstanceGroup) (ma
 	labels[nodeidentityaws.CloudTagInstanceGroupName] = ig.Name
 
 	return labels, nil
+}
+
+func (b *KopsModelContext) CloudTagsForServiceAccount(name string, sa types.NamespacedName) map[string]string {
+	tags := b.CloudTags(name, false)
+	tags[awstasks.CloudTagServiceAccountName] = sa.Name
+	tags[awstasks.CloudTagServiceAccountNamespace] = sa.Namespace
+	return tags
 }
 
 // CloudTags computes the tags to apply to a normal cloud resource with the specified name

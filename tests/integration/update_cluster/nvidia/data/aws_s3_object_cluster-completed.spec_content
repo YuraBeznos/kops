@@ -22,7 +22,7 @@ spec:
     logLevel: info
     nvidiaGPU:
       enabled: true
-      package: nvidia-headless-510-server
+      package: nvidia-headless-515-server
     version: 1.4.13
   dnsZone: Z1AFAKE1ZON3YO
   docker:
@@ -111,7 +111,7 @@ spec:
     nodeLocalDNS:
       cpuRequest: 25m
       enabled: false
-      image: registry.k8s.io/dns/k8s-dns-node-cache:1.21.3
+      image: registry.k8s.io/dns/k8s-dns-node-cache:1.22.8
       memoryRequest: 5Mi
     provider: CoreDNS
     serverIP: 100.64.0.10

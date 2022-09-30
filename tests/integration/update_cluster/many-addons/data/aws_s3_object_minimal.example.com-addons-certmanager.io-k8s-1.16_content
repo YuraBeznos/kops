@@ -8,9 +8,21 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: certificaterequests.cert-manager.io
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: ""
+        service:
+          name: cert-manager-webhook
+          namespace: kube-system
+          path: /convert
+          port: 443
+      conversionReviewVersions:
+      - v1beta1
   group: cert-manager.io
   names:
     categories:
@@ -140,7 +152,7 @@ spec:
                   if not specified.
                 items:
                   description: 'KeyUsage specifies valid usage contexts for keys.
-                    See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+                    See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3 https://tools.ietf.org/html/rfc5280#section-4.2.1.12
                     Valid KeyUsage values are as follows: "signing", "digital signature",
                     "content commitment", "key encipherment", "key agreement", "data
                     encipherment", "cert sign", "crl sign", "encipher only", "decipher
@@ -267,9 +279,21 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: certificates.cert-manager.io
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: ""
+        service:
+          name: cert-manager-webhook
+          namespace: kube-system
+          path: /convert
+          port: 443
+      conversionReviewVersions:
+      - v1beta1
   group: cert-manager.io
   names:
     categories:
@@ -487,6 +511,17 @@ spec:
                     - passwordSecretRef
                     type: object
                 type: object
+              literalSubject:
+                description: LiteralSubject is an LDAP formatted string that represents
+                  the [X.509 Subject field](https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.6).
+                  Use this *instead* of the Subject field if you need to ensure the
+                  correct ordering of the RDN sequence, such as when issuing certs
+                  for LDAP authentication. See https://github.com/cert-manager/cert-manager/issues/3203,
+                  https://github.com/cert-manager/cert-manager/issues/4424. This field
+                  is alpha level and is only supported by cert-manager installations
+                  where LiteralCertificateSubject feature gate is enabled on both
+                  cert-manager controller and webhook.
+                type: string
               privateKey:
                 description: Options to control private keys used for the Certificate.
                 properties:
@@ -634,7 +669,7 @@ spec:
                   if not specified.
                 items:
                   description: 'KeyUsage specifies valid usage contexts for keys.
-                    See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+                    See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3 https://tools.ietf.org/html/rfc5280#section-4.2.1.12
                     Valid KeyUsage values are as follows: "signing", "digital signature",
                     "content commitment", "key encipherment", "key agreement", "data
                     encipherment", "cert sign", "crl sign", "encipher only", "decipher
@@ -792,9 +827,21 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: challenges.acme.cert-manager.io
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: ""
+        service:
+          name: cert-manager-webhook
+          namespace: kube-system
+          path: /convert
+          port: 443
+      conversionReviewVersions:
+      - v1beta1
   group: acme.cert-manager.io
   names:
     categories:
@@ -1197,9 +1244,29 @@ spec:
                         properties:
                           accessKeyID:
                             description: 'The AccessKeyID is used for authentication.
-                              If not set we fall-back to using env vars, shared credentials
-                              file or AWS Instance metadata see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
+                              Cannot be set when SecretAccessKeyID is set. If neither
+                              the Access Key nor Key ID are set, we fall-back to using
+                              env vars, shared credentials file or AWS Instance metadata,
+                              see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
                             type: string
+                          accessKeyIDSecretRef:
+                            description: 'The SecretAccessKey is used for authentication.
+                              If neither the Access Key nor Key ID are set, we fall-back
+                              to using env vars, shared credentials file or AWS Instance
+                              metadata, see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
+                            properties:
+                              key:
+                                description: The key of the entry in the Secret resource's
+                                  `data` field to be used. Some instances of this
+                                  field may be defaulted, in others it may be required.
+                                type: string
+                              name:
+                                description: 'Name of the resource being referred
+                                  to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                type: string
+                            required:
+                            - name
+                            type: object
                           hostedZoneID:
                             description: If set, the provider will manage only this
                               zone in Route53 and will not do an lookup using the
@@ -1832,10 +1899,7 @@ spec:
                                                         namespaces list means "this
                                                         pod's namespace". An empty
                                                         selector ({}) matches all
-                                                        namespaces. This field is
-                                                        beta-level and is only honored
-                                                        when PodAffinityNamespaceSelector
-                                                        feature is enabled.
+                                                        namespaces.
                                                       properties:
                                                         matchExpressions:
                                                           description: matchExpressions
@@ -1913,7 +1977,7 @@ spec:
                                                         ones selected by namespaceSelector.
                                                         null or empty namespaces list
                                                         and null namespaceSelector
-                                                        means "this pod's namespace"
+                                                        means "this pod's namespace".
                                                       items:
                                                         type: string
                                                       type: array
@@ -2048,9 +2112,6 @@ spec:
                                                     or empty namespaces list means
                                                     "this pod's namespace". An empty
                                                     selector ({}) matches all namespaces.
-                                                    This field is beta-level and is
-                                                    only honored when PodAffinityNamespaceSelector
-                                                    feature is enabled.
                                                   properties:
                                                     matchExpressions:
                                                       description: matchExpressions
@@ -2121,7 +2182,7 @@ spec:
                                                     field and the ones selected by
                                                     namespaceSelector. null or empty
                                                     namespaces list and null namespaceSelector
-                                                    means "this pod's namespace"
+                                                    means "this pod's namespace".
                                                   items:
                                                     type: string
                                                   type: array
@@ -2259,10 +2320,7 @@ spec:
                                                         namespaces list means "this
                                                         pod's namespace". An empty
                                                         selector ({}) matches all
-                                                        namespaces. This field is
-                                                        beta-level and is only honored
-                                                        when PodAffinityNamespaceSelector
-                                                        feature is enabled.
+                                                        namespaces.
                                                       properties:
                                                         matchExpressions:
                                                           description: matchExpressions
@@ -2340,7 +2398,7 @@ spec:
                                                         ones selected by namespaceSelector.
                                                         null or empty namespaces list
                                                         and null namespaceSelector
-                                                        means "this pod's namespace"
+                                                        means "this pod's namespace".
                                                       items:
                                                         type: string
                                                       type: array
@@ -2475,9 +2533,6 @@ spec:
                                                     or empty namespaces list means
                                                     "this pod's namespace". An empty
                                                     selector ({}) matches all namespaces.
-                                                    This field is beta-level and is
-                                                    only honored when PodAffinityNamespaceSelector
-                                                    feature is enabled.
                                                   properties:
                                                     matchExpressions:
                                                       description: matchExpressions
@@ -2548,7 +2603,7 @@ spec:
                                                     field and the ones selected by
                                                     namespaceSelector. null or empty
                                                     namespaces list and null namespaceSelector
-                                                    means "this pod's namespace"
+                                                    means "this pod's namespace".
                                                   items:
                                                     type: string
                                                   type: array
@@ -2766,9 +2821,21 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: clusterissuers.cert-manager.io
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: ""
+        service:
+          name: cert-manager-webhook
+          namespace: kube-system
+          path: /convert
+          port: 443
+      conversionReviewVersions:
+      - v1beta1
   group: cert-manager.io
   names:
     categories:
@@ -3997,11 +4064,7 @@ spec:
                                                               list means "this pod's
                                                               namespace". An empty
                                                               selector ({}) matches
-                                                              all namespaces. This
-                                                              field is beta-level
-                                                              and is only honored
-                                                              when PodAffinityNamespaceSelector
-                                                              feature is enabled.
+                                                              all namespaces.
                                                             properties:
                                                               matchExpressions:
                                                                 description: matchExpressions
@@ -4096,7 +4159,7 @@ spec:
                                                               selected by namespaceSelector.
                                                               null or empty namespaces
                                                               list and null namespaceSelector
-                                                              means "this pod's namespace"
+                                                              means "this pod's namespace".
                                                             items:
                                                               type: string
                                                             type: array
@@ -4251,10 +4314,7 @@ spec:
                                                           null or empty namespaces
                                                           list means "this pod's namespace".
                                                           An empty selector ({}) matches
-                                                          all namespaces. This field
-                                                          is beta-level and is only
-                                                          honored when PodAffinityNamespaceSelector
-                                                          feature is enabled.
+                                                          all namespaces.
                                                         properties:
                                                           matchExpressions:
                                                             description: matchExpressions
@@ -4336,7 +4396,7 @@ spec:
                                                           the ones selected by namespaceSelector.
                                                           null or empty namespaces
                                                           list and null namespaceSelector
-                                                          means "this pod's namespace"
+                                                          means "this pod's namespace".
                                                         items:
                                                           type: string
                                                         type: array
@@ -4498,11 +4558,7 @@ spec:
                                                               list means "this pod's
                                                               namespace". An empty
                                                               selector ({}) matches
-                                                              all namespaces. This
-                                                              field is beta-level
-                                                              and is only honored
-                                                              when PodAffinityNamespaceSelector
-                                                              feature is enabled.
+                                                              all namespaces.
                                                             properties:
                                                               matchExpressions:
                                                                 description: matchExpressions
@@ -4597,7 +4653,7 @@ spec:
                                                               selected by namespaceSelector.
                                                               null or empty namespaces
                                                               list and null namespaceSelector
-                                                              means "this pod's namespace"
+                                                              means "this pod's namespace".
                                                             items:
                                                               type: string
                                                             type: array
@@ -4752,10 +4808,7 @@ spec:
                                                           null or empty namespaces
                                                           list means "this pod's namespace".
                                                           An empty selector ({}) matches
-                                                          all namespaces. This field
-                                                          is beta-level and is only
-                                                          honored when PodAffinityNamespaceSelector
-                                                          feature is enabled.
+                                                          all namespaces.
                                                         properties:
                                                           matchExpressions:
                                                             description: matchExpressions
@@ -4837,7 +4890,7 @@ spec:
                                                           the ones selected by namespaceSelector.
                                                           null or empty namespaces
                                                           list and null namespaceSelector
-                                                          means "this pod's namespace"
+                                                          means "this pod's namespace".
                                                         items:
                                                           type: string
                                                         type: array
@@ -5311,8 +5364,6 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    cert-manager.io/inject-ca-from-secret: kube-system/cert-manager-webhook-ca
   creationTimestamp: null
   labels:
     addon.kops.k8s.io/name: certmanager.io
@@ -5320,9 +5371,21 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: issuers.cert-manager.io
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: ""
+        service:
+          name: cert-manager-webhook
+          namespace: kube-system
+          path: /convert
+          port: 443
+      conversionReviewVersions:
+      - v1beta1
   group: cert-manager.io
   names:
     categories:
@@ -5824,10 +5887,33 @@ spec:
                               properties:
                                 accessKeyID:
                                   description: 'The AccessKeyID is used for authentication.
-                                    If not set we fall-back to using env vars, shared
-                                    credentials file or AWS Instance metadata see:
-                                    https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
+                                    Cannot be set when SecretAccessKeyID is set. If
+                                    neither the Access Key nor Key ID are set, we
+                                    fall-back to using env vars, shared credentials
+                                    file or AWS Instance metadata, see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
                                   type: string
+                                accessKeyIDSecretRef:
+                                  description: 'The SecretAccessKey is used for authentication.
+                                    If set, pull the AWS access key ID from a key
+                                    within a Kubernetes Secret. Cannot be set when
+                                    AccessKeyID is set. If neither the Access Key
+                                    nor Key ID are set, we fall-back to using env
+                                    vars, shared credentials file or AWS Instance
+                                    metadata, see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
+                                  properties:
+                                    key:
+                                      description: The key of the entry in the Secret
+                                        resource's `data` field to be used. Some instances
+                                        of this field may be defaulted, in others
+                                        it may be required.
+                                      type: string
+                                    name:
+                                      description: 'Name of the resource being referred
+                                        to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                      type: string
+                                  required:
+                                  - name
+                                  type: object
                                 hostedZoneID:
                                   description: If set, the provider will manage only
                                     this zone in Route53 and will not do an lookup
@@ -5845,9 +5931,10 @@ spec:
                                     shared credentials file or AWS Instance metadata
                                   type: string
                                 secretAccessKeySecretRef:
-                                  description: The SecretAccessKey is used for authentication.
-                                    If not set we fall-back to using env vars, shared
-                                    credentials file or AWS Instance metadata https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials
+                                  description: 'The SecretAccessKey is used for authentication.
+                                    If neither the Access Key nor Key ID are set,
+                                    we fall-back to using env vars, shared credentials
+                                    file or AWS Instance metadata, see: https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials'
                                   properties:
                                     key:
                                       description: The key of the entry in the Secret
@@ -6550,11 +6637,7 @@ spec:
                                                               list means "this pod's
                                                               namespace". An empty
                                                               selector ({}) matches
-                                                              all namespaces. This
-                                                              field is beta-level
-                                                              and is only honored
-                                                              when PodAffinityNamespaceSelector
-                                                              feature is enabled.
+                                                              all namespaces.
                                                             properties:
                                                               matchExpressions:
                                                                 description: matchExpressions
@@ -6649,7 +6732,7 @@ spec:
                                                               selected by namespaceSelector.
                                                               null or empty namespaces
                                                               list and null namespaceSelector
-                                                              means "this pod's namespace"
+                                                              means "this pod's namespace".
                                                             items:
                                                               type: string
                                                             type: array
@@ -6804,10 +6887,7 @@ spec:
                                                           null or empty namespaces
                                                           list means "this pod's namespace".
                                                           An empty selector ({}) matches
-                                                          all namespaces. This field
-                                                          is beta-level and is only
-                                                          honored when PodAffinityNamespaceSelector
-                                                          feature is enabled.
+                                                          all namespaces.
                                                         properties:
                                                           matchExpressions:
                                                             description: matchExpressions
@@ -6889,7 +6969,7 @@ spec:
                                                           the ones selected by namespaceSelector.
                                                           null or empty namespaces
                                                           list and null namespaceSelector
-                                                          means "this pod's namespace"
+                                                          means "this pod's namespace".
                                                         items:
                                                           type: string
                                                         type: array
@@ -7051,11 +7131,7 @@ spec:
                                                               list means "this pod's
                                                               namespace". An empty
                                                               selector ({}) matches
-                                                              all namespaces. This
-                                                              field is beta-level
-                                                              and is only honored
-                                                              when PodAffinityNamespaceSelector
-                                                              feature is enabled.
+                                                              all namespaces.
                                                             properties:
                                                               matchExpressions:
                                                                 description: matchExpressions
@@ -7150,7 +7226,7 @@ spec:
                                                               selected by namespaceSelector.
                                                               null or empty namespaces
                                                               list and null namespaceSelector
-                                                              means "this pod's namespace"
+                                                              means "this pod's namespace".
                                                             items:
                                                               type: string
                                                             type: array
@@ -7305,10 +7381,7 @@ spec:
                                                           null or empty namespaces
                                                           list means "this pod's namespace".
                                                           An empty selector ({}) matches
-                                                          all namespaces. This field
-                                                          is beta-level and is only
-                                                          honored when PodAffinityNamespaceSelector
-                                                          feature is enabled.
+                                                          all namespaces.
                                                         properties:
                                                           matchExpressions:
                                                             description: matchExpressions
@@ -7390,7 +7463,7 @@ spec:
                                                           the ones selected by namespaceSelector.
                                                           null or empty namespaces
                                                           list and null namespaceSelector
-                                                          means "this pod's namespace"
+                                                          means "this pod's namespace".
                                                         items:
                                                           type: string
                                                         type: array
@@ -7864,8 +7937,6 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    cert-manager.io/inject-ca-from-secret: kube-system/cert-manager-webhook-ca
   creationTimestamp: null
   labels:
     addon.kops.k8s.io/name: certmanager.io
@@ -7873,9 +7944,21 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: orders.acme.cert-manager.io
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: ""
+        service:
+          name: cert-manager-webhook
+          namespace: kube-system
+          path: /convert
+          port: 443
+      conversionReviewVersions:
+      - v1beta1
   group: acme.cert-manager.io
   names:
     categories:
@@ -8122,7 +8205,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cainjector
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-cainjector
   namespace: kube-system
 
@@ -8140,7 +8223,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager
   namespace: kube-system
 
@@ -8158,7 +8241,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: webhook
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-webhook
   namespace: kube-system
 
@@ -8192,7 +8275,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cainjector
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-cainjector
 rules:
 - apiGroups:
@@ -8262,7 +8345,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-issuers
 rules:
 - apiGroups:
@@ -8313,7 +8396,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-clusterissuers
 rules:
 - apiGroups:
@@ -8364,7 +8447,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-certificates
 rules:
 - apiGroups:
@@ -8438,7 +8521,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-orders
 rules:
 - apiGroups:
@@ -8509,7 +8592,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-challenges
 rules:
 - apiGroups:
@@ -8619,7 +8702,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-ingress-shim
 rules:
 - apiGroups:
@@ -8693,7 +8776,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-view: "true"
@@ -8732,7 +8815,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
   name: cert-manager-edit
@@ -8780,7 +8863,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-approve:cert-manager-io
 rules:
 - apiGroups:
@@ -8806,7 +8889,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-certificatesigningrequests
 rules:
 - apiGroups:
@@ -8854,7 +8937,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: webhook
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-webhook:subjectaccessreviews
 rules:
 - apiGroups:
@@ -8877,7 +8960,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cainjector
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-cainjector
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -8901,7 +8984,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-issuers
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -8925,7 +9008,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-clusterissuers
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -8949,7 +9032,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-certificates
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -8973,7 +9056,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-orders
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -8997,7 +9080,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-challenges
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -9021,7 +9104,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-ingress-shim
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -9045,7 +9128,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-approve:cert-manager-io
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -9069,7 +9152,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-controller-certificatesigningrequests
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -9093,7 +9176,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: webhook
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-webhook:subjectaccessreviews
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -9118,7 +9201,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cainjector
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-cainjector:leaderelection
   namespace: kube-system
 rules:
@@ -9153,7 +9236,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager:leaderelection
   namespace: kube-system
 rules:
@@ -9187,7 +9270,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: webhook
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-webhook:dynamic-serving
   namespace: kube-system
 rules:
@@ -9222,7 +9305,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cainjector
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-cainjector:leaderelection
   namespace: kube-system
 roleRef:
@@ -9247,7 +9330,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager:leaderelection
   namespace: kube-system
 roleRef:
@@ -9273,7 +9356,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: webhook
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-webhook:dynamic-serving
   namespace: kube-system
 roleRef:
@@ -9299,7 +9382,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager
   namespace: kube-system
 spec:
@@ -9327,7 +9410,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: webhook
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-webhook
   namespace: kube-system
 spec:
@@ -9355,7 +9438,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cainjector
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-cainjector
   namespace: kube-system
 spec:
@@ -9373,7 +9456,7 @@ spec:
         app.kubernetes.io/component: cainjector
         app.kubernetes.io/instance: cert-manager
         app.kubernetes.io/name: cainjector
-        app.kubernetes.io/version: v1.8.0
+        app.kubernetes.io/version: v1.9.1
         kops.k8s.io/managed-by: kops
     spec:
       affinity:
@@ -9395,7 +9478,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: quay.io/jetstack/cert-manager-cainjector:v1.8.0
+        image: quay.io/jetstack/cert-manager-cainjector:v1.9.1
         imagePullPolicy: IfNotPresent
         name: cert-manager
         securityContext:
@@ -9424,7 +9507,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager
   namespace: kube-system
 spec:
@@ -9446,7 +9529,7 @@ spec:
         app.kubernetes.io/component: controller
         app.kubernetes.io/instance: cert-manager
         app.kubernetes.io/name: cert-manager
-        app.kubernetes.io/version: v1.8.0
+        app.kubernetes.io/version: v1.9.1
         kops.k8s.io/managed-by: kops
     spec:
       affinity:
@@ -9470,7 +9553,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: quay.io/jetstack/cert-manager-controller:v1.8.0
+        image: quay.io/jetstack/cert-manager-controller:v1.9.1
         imagePullPolicy: IfNotPresent
         name: cert-manager
         ports:
@@ -9504,7 +9587,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: webhook
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-webhook
   namespace: kube-system
 spec:
@@ -9522,7 +9605,7 @@ spec:
         app.kubernetes.io/component: webhook
         app.kubernetes.io/instance: cert-manager
         app.kubernetes.io/name: webhook
-        app.kubernetes.io/version: v1.8.0
+        app.kubernetes.io/version: v1.9.1
         kops.k8s.io/managed-by: kops
     spec:
       affinity:
@@ -9547,7 +9630,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: quay.io/jetstack/cert-manager-webhook:v1.8.0
+        image: quay.io/jetstack/cert-manager-webhook:v1.9.1
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -9602,7 +9685,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: webhook
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-webhook
 webhooks:
 - admissionReviewVersions:
@@ -9644,7 +9727,7 @@ metadata:
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/managed-by: kops
     app.kubernetes.io/name: webhook
-    app.kubernetes.io/version: v1.8.0
+    app.kubernetes.io/version: v1.9.1
   name: cert-manager-webhook
 webhooks:
 - admissionReviewVersions:

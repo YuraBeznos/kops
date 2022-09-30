@@ -18,11 +18,13 @@ package kubemanifest
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 	"k8s.io/kops/util/pkg/text"
 	"sigs.k8s.io/yaml"
@@ -41,6 +43,11 @@ func NewObject(data map[string]interface{}) *Object {
 // ToUnstructured converts the object to an unstructured.Unstructured
 func (o *Object) ToUnstructured() *unstructured.Unstructured {
 	return &unstructured.Unstructured{Object: o.data}
+}
+
+// GroupVersionKind returns the group/version/kind information for the object
+func (o *Object) GroupVersionKind() schema.GroupVersionKind {
+	return o.ToUnstructured().GroupVersionKind()
 }
 
 // FromRuntimeObject converts from a runtime.Object.
@@ -121,7 +128,15 @@ func (l ObjectList) ToYAML() ([]byte, error) {
 func (m *Object) ToYAML() ([]byte, error) {
 	b, err := yaml.Marshal(m.data)
 	if err != nil {
-		return nil, fmt.Errorf("error marshaling manifest to yaml: %v", err)
+		return nil, fmt.Errorf("error marshaling manifest to yaml: %w", err)
+	}
+	return b, nil
+}
+
+func (m *Object) MarshalJSON() ([]byte, error) {
+	b, err := json.Marshal(m.data)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling manifest to json: %w", err)
 	}
 	return b, nil
 }

@@ -144,6 +144,22 @@ spec:
       - 8.8.8.8
 ```
 
+##### Enabling dns-01 challenges
+
+{{ kops_feature_table(kops_added_default='1.25.0') }}
+
+Cert Manager may be granted the necessary IAM privileges to solve dns-01 challenges by adding a list of hostedzone IDs.
+This requires [external permissions for service accounts](/cluster_spec/#service-account-issuer-discovery-and-aws-iam-roles-for-service-accounts-irsa) to be enabled.
+
+```yaml
+spec:
+  certManager:
+    enabled: true
+    hostedZoneIDs:
+    - ZONEID
+  iam:
+    useServiceAccountExternalPermissions: true
+```
 
 Read more about cert-manager in the [official documentation](https://cert-manager.io/docs/)
 
@@ -222,8 +238,10 @@ spec:
   nodeTerminationHandler:
     cpuRequest: 200m
     enabled: true
+    enableRebalanceMonitoring: true
     enableSQSTerminationDraining: true
     managedASGTag: "aws-node-termination-handler/managed"
+    prometheusEnable: true
 ```
 
 ##### Queue Processor Mode
@@ -320,6 +338,22 @@ spec:
   cloudConfig:
     awsEBSCSIDriver:
       enabled: true
+```
+
+##### Self-managed aws-ebs-csi-driver
+
+{{ kops_feature_table(kops_added_default='1.25') }}
+
+The following configuration allows for a self-managed aws-ebs-csi-driver. Please note that if you’re using Amazon EBS volumes, you must install the Amazon EBS CSI driver. If the Amazon EBS CSI plugin is not installed, then volume operations will fail. 
+
+If IRSA is not enabled, the control plane will have the permissions to provision nodes, and the self-managed controllers should run on the control plane. If IRSA is enabled, kOps will create the respective AWS IAM Role, assign the policy, and establish a trust relationship allowing the ServiceAccount to assume the IAM Role. To configure Pods to assume the given IAM roles, enable the [Pod Identity Webhook](https://kops.sigs.k8s.io/addons/#pod-identity-webhook). Without this webhook, you need to modify your Pod specs yourself for your Pod to assume the defined roles.
+
+```yaml
+spec:
+  cloudConfig:
+    awsEBSCSIDriver:
+      enabled: true
+      managed: false
 ```
 
 ## Custom addons

@@ -292,6 +292,7 @@ const (
 	CloudProviderHetzner   CloudProviderID = "hetzner"
 	CloudProviderOpenstack CloudProviderID = "openstack"
 	CloudProviderAzure     CloudProviderID = "azure"
+	CloudProviderScaleway  CloudProviderID = "scaleway"
 	CloudProviderYandex    CloudProviderID = "yandex"
 )
 

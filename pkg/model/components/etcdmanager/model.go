@@ -59,9 +59,6 @@ var _ fi.ModelBuilder = &EtcdManagerBuilder{}
 // Build creates the tasks
 func (b *EtcdManagerBuilder) Build(c *fi.ModelBuilderContext) error {
 	for _, etcdCluster := range b.Cluster.Spec.EtcdClusters {
-		name := etcdCluster.Name
-		version := etcdCluster.Version
-
 		backupStore := ""
 		if etcdCluster.Backups != nil {
 			backupStore = etcdCluster.Backups.BackupStore
@@ -70,25 +67,29 @@ func (b *EtcdManagerBuilder) Build(c *fi.ModelBuilderContext) error {
 			return fmt.Errorf("backupStore must be set for use with etcd-manager")
 		}
 
-		manifest, err := b.buildManifest(etcdCluster)
-		if err != nil {
-			return err
-		}
+		for _, member := range etcdCluster.Members {
+			instanceGroupName := fi.StringValue(member.InstanceGroup)
+			manifest, err := b.buildManifest(etcdCluster, instanceGroupName)
+			if err != nil {
+				return err
+			}
 
-		manifestYAML, err := k8scodecs.ToVersionedYaml(manifest)
-		if err != nil {
-			return fmt.Errorf("error marshaling manifest to yaml: %v", err)
-		}
+			manifestYAML, err := k8scodecs.ToVersionedYaml(manifest)
+			if err != nil {
+				return fmt.Errorf("error marshaling manifest to yaml: %v", err)
+			}
 
-		c.AddTask(&fitasks.ManagedFile{
-			Contents:  fi.NewBytesResource(manifestYAML),
-			Lifecycle: b.Lifecycle,
-			Location:  fi.String("manifests/etcd/" + name + ".yaml"),
-			Name:      fi.String("manifests-etcdmanager-" + name),
-		})
+			name := fmt.Sprintf("%s-%s", etcdCluster.Name, instanceGroupName)
+			c.AddTask(&fitasks.ManagedFile{
+				Contents:  fi.NewBytesResource(manifestYAML),
+				Lifecycle: b.Lifecycle,
+				Location:  fi.String("manifests/etcd/" + name + ".yaml"),
+				Name:      fi.String("manifests-etcdmanager-" + name),
+			})
+		}
 
 		info := &etcdClusterSpec{
-			EtcdVersion: version,
+			EtcdVersion: etcdCluster.Version,
 			MemberCount: int32(len(etcdCluster.Members)),
 		}
 
@@ -110,7 +111,7 @@ func (b *EtcdManagerBuilder) Build(c *fi.ModelBuilderContext) error {
 			Base:      fi.String(backupStore),
 			// TODO: We need this to match the backup base (currently)
 			Location: fi.String(location + "/control/etcd-cluster-spec"),
-			Name:     fi.String("etcd-cluster-spec-" + name),
+			Name:     fi.String("etcd-cluster-spec-" + etcdCluster.Name),
 		})
 
 		// We create a CA keypair to enable secure communication
@@ -168,8 +169,8 @@ type etcdClusterSpec struct {
 	EtcdVersion string `json:"etcdVersion,omitempty"`
 }
 
-func (b *EtcdManagerBuilder) buildManifest(etcdCluster kops.EtcdClusterSpec) (*v1.Pod, error) {
-	return b.buildPod(etcdCluster)
+func (b *EtcdManagerBuilder) buildManifest(etcdCluster kops.EtcdClusterSpec, instanceGroupName string) (*v1.Pod, error) {
+	return b.buildPod(etcdCluster, instanceGroupName)
 }
 
 // Until we introduce the bundle, we hard-code the manifest
@@ -182,7 +183,7 @@ metadata:
 spec:
   containers:
   - name: etcd-manager
-    image: registry.k8s.io/etcdadm/etcd-manager:v3.0.20220717
+    image: registry.k8s.io/etcdadm/etcd-manager:v3.0.20220831
     resources:
       requests:
         cpu: 100m
@@ -216,7 +217,7 @@ spec:
 `
 
 // buildPod creates the pod spec, based on the EtcdClusterSpec
-func (b *EtcdManagerBuilder) buildPod(etcdCluster kops.EtcdClusterSpec) (*v1.Pod, error) {
+func (b *EtcdManagerBuilder) buildPod(etcdCluster kops.EtcdClusterSpec, instanceGroupName string) (*v1.Pod, error) {
 	var pod *v1.Pod
 	var container *v1.Container
 
@@ -430,6 +431,7 @@ func (b *EtcdManagerBuilder) buildPod(etcdCluster kops.EtcdClusterSpec) (*v1.Pod
 				fmt.Sprintf("%s=%s", hetzner.TagKubernetesClusterName, b.Cluster.Name),
 				fmt.Sprintf("%s=%s", hetzner.TagKubernetesVolumeRole, etcdCluster.Name),
 			}
+			config.VolumeNameTag = fmt.Sprintf("%s=%s", hetzner.TagKubernetesInstanceGroup, instanceGroupName)
 
 		case kops.CloudProviderOpenstack:
 			config.VolumeProvider = "openstack"
@@ -493,7 +495,7 @@ func (b *EtcdManagerBuilder) buildPod(etcdCluster kops.EtcdClusterSpec) (*v1.Pod
 
 	if etcdCluster.Manager != nil && len(etcdCluster.Manager.Env) > 0 {
 		for _, envVar := range etcdCluster.Manager.Env {
-			klog.Warningf("overloading ENV var in manifest %s with %s=%s", bundle, envVar.Name, envVar.Value)
+			klog.V(2).Infof("overloading ENV var in manifest %s with %s=%s", bundle, envVar.Name, envVar.Value)
 			configOverwrite := v1.EnvVar{
 				Name:  envVar.Name,
 				Value: envVar.Value,

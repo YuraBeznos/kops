@@ -131,7 +131,9 @@ cloudConfig:
 containerRuntime: containerd
 containerd:
   logLevel: info
-  version: 1.6.6
+  runc:
+    version: 1.1.4
+  version: 1.6.8
 docker:
   skipInstall: true
 encryptionConfig: null
@@ -170,7 +172,7 @@ kubeAPIServer:
   featureGates:
     CSIMigrationAWS: "true"
     InTreePluginAWSUnregister: "true"
-  image: registry.k8s.io/kube-apiserver:v1.24.0-alpha.1
+  image: registry.k8s.io/kube-apiserver:v1.24.3
   kubeletPreferredAddressTypes:
   - InternalIP
   - Hostname
@@ -199,7 +201,7 @@ kubeControllerManager:
   featureGates:
     CSIMigrationAWS: "true"
     InTreePluginAWSUnregister: "true"
-  image: registry.k8s.io/kube-controller-manager:v1.24.0-alpha.1
+  image: registry.k8s.io/kube-controller-manager:v1.24.3
   leaderElection:
     leaderElect: true
   logLevel: 2
@@ -207,13 +209,13 @@ kubeControllerManager:
 kubeProxy:
   clusterCIDR: 100.96.0.0/11
   cpuRequest: 100m
-  image: registry.k8s.io/kube-proxy:v1.24.0-alpha.1
+  image: registry.k8s.io/kube-proxy:v1.24.3
   logLevel: 2
 kubeScheduler:
   featureGates:
     CSIMigrationAWS: "true"
     InTreePluginAWSUnregister: "true"
-  image: registry.k8s.io/kube-scheduler:v1.24.0-alpha.1
+  image: registry.k8s.io/kube-scheduler:v1.24.3
   leaderElection:
     leaderElect: true
   logLevel: 2
@@ -264,7 +266,7 @@ CloudProvider: aws
 ConfigBase: memfs://tests/minimal.example.com
 InstanceGroupName: master-us-test-1a
 InstanceGroupRole: Master
-NodeupConfigHash: wtCIsFLsSfcGge5FHSH41FKdZVIktV32dfGK3LuRV8w=
+NodeupConfigHash: Y7eq6GEuml/O82thdt9qJqeAgjWx/+Nq9/92mQ1n4e4=
 
 __EOF_KUBE_ENV
 

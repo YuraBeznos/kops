@@ -20,10 +20,13 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"k8s.io/kops/upup/pkg/fi"
 	"k8s.io/kops/upup/pkg/fi/cloudup/hetzner"
+	"k8s.io/kops/upup/pkg/fi/cloudup/terraform"
+	"k8s.io/kops/upup/pkg/fi/cloudup/terraformWriter"
 )
 
 // +kops:fitask
@@ -54,11 +57,17 @@ func (e *LoadBalancer) IsForAPIServer() bool {
 }
 
 func (v *LoadBalancer) FindAddresses(c *fi.Context) ([]string, error) {
+	// TODO(hakman): Use mock to handle this more gracefully
+	if strings.HasPrefix(c.ClusterConfigBase.Path(), "memfs://tests/") {
+		return nil, nil
+	}
+
+	ctx := context.TODO()
 	cloud := c.Cloud.(hetzner.HetznerCloud)
 	client := cloud.LoadBalancerClient()
 
 	// TODO(hakman): Find using label selector
-	loadbalancers, err := client.All(context.TODO())
+	loadbalancers, err := client.All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +75,14 @@ func (v *LoadBalancer) FindAddresses(c *fi.Context) ([]string, error) {
 	for _, loadbalancer := range loadbalancers {
 		if loadbalancer.Name == fi.StringValue(v.Name) {
 			var addresses []string
+			if loadbalancer.PublicNet.IPv4.IP == nil {
+				return nil, fmt.Errorf("failed to find load-balancer %q public address", fi.StringValue(v.Name))
+			}
 			addresses = append(addresses, loadbalancer.PublicNet.IPv4.IP.String())
 			for _, privateNetwork := range loadbalancer.PrivateNet {
+				if privateNetwork.IP == nil {
+					return nil, fmt.Errorf("failed to find load-balancer %q private address", fi.StringValue(v.Name))
+				}
 				addresses = append(addresses, privateNetwork.IP.String())
 			}
 			return addresses, nil
@@ -78,11 +93,12 @@ func (v *LoadBalancer) FindAddresses(c *fi.Context) ([]string, error) {
 }
 
 func (v *LoadBalancer) Find(c *fi.Context) (*LoadBalancer, error) {
+	ctx := context.TODO()
 	cloud := c.Cloud.(hetzner.HetznerCloud)
 	client := cloud.LoadBalancerClient()
 
 	// TODO(hakman): Find using label selector
-	loadbalancers, err := client.All(context.TODO())
+	loadbalancers, err := client.All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -174,12 +190,18 @@ func (_ *LoadBalancer) CheckChanges(a, e, changes *LoadBalancer) error {
 }
 
 func (_ *LoadBalancer) RenderHetzner(t *hetzner.HetznerAPITarget, a, e, changes *LoadBalancer) error {
+	ctx := context.TODO()
+	actionClient := t.Cloud.ActionClient()
 	client := t.Cloud.LoadBalancerClient()
 
-	var loadbalancer *hcloud.LoadBalancer
 	if a == nil {
 		if e.Network == nil {
 			return fmt.Errorf("failed to find network for loadbalancer %q", fi.StringValue(e.Name))
+		}
+
+		networkID, err := strconv.Atoi(fi.StringValue(e.Network.ID))
+		if err != nil {
+			return fmt.Errorf("failed to convert network ID %q to int: %w", fi.StringValue(e.Network.ID), err)
 		}
 
 		opts := hcloud.LoadBalancerCreateOpts{
@@ -194,33 +216,47 @@ func (_ *LoadBalancer) RenderHetzner(t *hetzner.HetznerAPITarget, a, e, changes 
 				Name: e.Location,
 			},
 			Labels: e.Labels,
-			Services: []hcloud.LoadBalancerCreateOptsService{
+			Targets: []hcloud.LoadBalancerCreateOptsTarget{
 				{
-					Protocol:        hcloud.LoadBalancerServiceProtocolTCP,
-					ListenPort:      fi.Int(443),
-					DestinationPort: fi.Int(443),
+					Type: hcloud.LoadBalancerTargetTypeLabelSelector,
+					LabelSelector: hcloud.LoadBalancerCreateOptsTargetLabelSelector{
+						Selector: e.Target,
+					},
+					UsePrivateIP: fi.Bool(true),
 				},
 			},
 			Network: &hcloud.Network{
-				ID: fi.IntValue(e.Network.ID),
+				ID: networkID,
 			},
 		}
-		result, _, err := client.Create(context.TODO(), opts)
+
+		for _, service := range e.Services {
+			opts.Services = append(opts.Services, hcloud.LoadBalancerCreateOptsService{
+				Protocol:        hcloud.LoadBalancerServiceProtocol(service.Protocol),
+				ListenPort:      service.ListenerPort,
+				DestinationPort: service.DestinationPort,
+			})
+		}
+
+		result, _, err := client.Create(ctx, opts)
 		if err != nil {
 			return err
 		}
-		loadbalancer = result.LoadBalancer
+		_, errCh := actionClient.WatchProgress(ctx, result.Action)
+		if err := <-errCh; err != nil {
+			return err
+		}
 
 	} else {
 		var err error
-		loadbalancer, _, err = client.Get(context.TODO(), strconv.Itoa(fi.IntValue(a.ID)))
+		loadbalancer, _, err := client.Get(ctx, strconv.Itoa(fi.IntValue(a.ID)))
 		if err != nil {
 			return err
 		}
 
 		// Update the labels
 		if changes.Name != nil || len(changes.Labels) != 0 {
-			_, _, err := client.Update(context.TODO(), loadbalancer, hcloud.LoadBalancerUpdateOpts{
+			_, _, err := client.Update(ctx, loadbalancer, hcloud.LoadBalancerUpdateOpts{
 				Name:   fi.StringValue(e.Name),
 				Labels: e.Labels,
 			})
@@ -232,7 +268,7 @@ func (_ *LoadBalancer) RenderHetzner(t *hetzner.HetznerAPITarget, a, e, changes 
 		// Update the services
 		if len(changes.Services) > 0 {
 			for _, service := range e.Services {
-				_, _, err := client.AddService(context.TODO(), loadbalancer, hcloud.LoadBalancerAddServiceOpts{
+				action, _, err := client.AddService(ctx, loadbalancer, hcloud.LoadBalancerAddServiceOpts{
 					Protocol:        hcloud.LoadBalancerServiceProtocol(service.Protocol),
 					ListenPort:      service.ListenerPort,
 					DestinationPort: service.DestinationPort,
@@ -242,20 +278,24 @@ func (_ *LoadBalancer) RenderHetzner(t *hetzner.HetznerAPITarget, a, e, changes 
 						return err
 					}
 				}
+				_, errCh := actionClient.WatchProgress(ctx, action)
+				if err := <-errCh; err != nil {
+					return err
+				}
 			}
 		}
 
-	}
-
-	// Add the target separately, otherwise UsePrivateIP cannot be set
-	// https://github.com/hetznercloud/hcloud-go/pull/198
-	if a == nil || a.Target == "" {
-		_, _, err := client.AddLabelSelectorTarget(context.TODO(), loadbalancer, hcloud.LoadBalancerAddLabelSelectorTargetOpts{
-			Selector:     e.Target,
-			UsePrivateIP: fi.Bool(true),
-		})
-		if err != nil {
+		// Update the targets
+		if a.Target == "" {
+			action, _, err := client.AddLabelSelectorTarget(ctx, loadbalancer, hcloud.LoadBalancerAddLabelSelectorTargetOpts{
+				Selector:     e.Target,
+				UsePrivateIP: fi.Bool(true),
+			})
 			if err != nil {
+				return err
+			}
+			_, errCh := actionClient.WatchProgress(ctx, action)
+			if err := <-errCh; err != nil {
 				return err
 			}
 		}
@@ -275,4 +315,94 @@ var _ fi.HasDependencies = &LoadBalancerService{}
 
 func (e *LoadBalancerService) GetDependencies(tasks map[string]fi.Task) []fi.Task {
 	return nil
+}
+
+type terraformLoadBalancer struct {
+	Name     *string                      `cty:"name"`
+	Type     *string                      `cty:"load_balancer_type"`
+	Location *string                      `cty:"location"`
+	Target   *terraformLoadBalancerTarget `cty:"target"`
+	Network  *terraformWriter.Literal     `cty:"network"`
+	Labels   map[string]string            `cty:"labels"`
+}
+
+type terraformLoadBalancerNetwork struct {
+	LoadBalancerID *terraformWriter.Literal `cty:"load_balancer_id"`
+	NetworkID      *terraformWriter.Literal `cty:"network_id"`
+}
+
+type terraformLoadBalancerService struct {
+	LoadBalancerID  *terraformWriter.Literal `cty:"load_balancer_id"`
+	Protocol        *string                  `cty:"protocol"`
+	ListenPort      *int                     `cty:"listen_port"`
+	DestinationPort *int                     `cty:"destination_port"`
+}
+
+type terraformLoadBalancerTarget struct {
+	LoadBalancerID *terraformWriter.Literal `cty:"load_balancer_id"`
+	Type           *string                  `cty:"type"`
+	LabelSelector  *string                  `cty:"label_selector"`
+	UsePrivateIP   *bool                    `cty:"use_private_ip"`
+}
+
+func (_ *LoadBalancer) RenderTerraform(t *terraform.TerraformTarget, a, e, changes *LoadBalancer) error {
+	{
+		tf := &terraformLoadBalancer{
+			Name:     e.Name,
+			Type:     &e.Type,
+			Location: &e.Location,
+			Labels:   e.Labels,
+		}
+
+		err := t.RenderResource("hcloud_load_balancer", *e.Name, tf)
+		if err != nil {
+			return err
+		}
+	}
+
+	{
+		tf := &terraformLoadBalancerNetwork{
+			LoadBalancerID: e.TerraformLink(),
+			NetworkID:      e.Network.TerraformLink(),
+		}
+
+		err := t.RenderResource("hcloud_load_balancer_network", *e.Name, tf)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, service := range e.Services {
+		tf := &terraformLoadBalancerService{
+			LoadBalancerID:  e.TerraformLink(),
+			Protocol:        fi.String(service.Protocol),
+			ListenPort:      service.ListenerPort,
+			DestinationPort: service.DestinationPort,
+		}
+
+		err := t.RenderResource("hcloud_load_balancer_service", *e.Name, tf)
+		if err != nil {
+			return err
+		}
+	}
+
+	{
+		tf := &terraformLoadBalancerTarget{
+			LoadBalancerID: e.TerraformLink(),
+			Type:           fi.String(string(hcloud.LoadBalancerTargetTypeLabelSelector)),
+			LabelSelector:  fi.String(e.Target),
+			UsePrivateIP:   fi.Bool(true),
+		}
+
+		err := t.RenderResource("hcloud_load_balancer_target", *e.Name, tf)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e *LoadBalancer) TerraformLink() *terraformWriter.Literal {
+	return terraformWriter.LiteralProperty("hcloud_load_balancer", *e.Name, "id")
 }

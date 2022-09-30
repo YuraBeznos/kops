@@ -6,8 +6,8 @@ metadata:
   name: hcloud
   namespace: kube-system
 stringData:
-  token: {{ HCLOUD_TOKEN }}
-  network: {{ ClusterName }}
+  token: "{{ HCLOUD_TOKEN }}"
+  network: "{{ HCLOUD_NETWORK }}"
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -46,7 +46,6 @@ spec:
     spec:
       serviceAccountName: cloud-controller-manager
       dnsPolicy: Default
-      priorityClassName: system-node-critical
       tolerations:
         # this taint is set by all kubelets running `--cloud-provider=external`
         # so we should tolerate it to schedule the cloud controller manager
@@ -66,13 +65,13 @@ spec:
           effect: "NoSchedule"
       hostNetwork: true
       containers:
-        - image: hetznercloud/hcloud-cloud-controller-manager:v1.12.1
+        - image: "{{ .ExternalCloudControllerManager.Image }}"
           name: hcloud-cloud-controller-manager
           command:
             - "/bin/hcloud-cloud-controller-manager"
-            - "--cloud-provider=hcloud"
-            - "--leader-elect=false"
-            - "--allow-untagged-cloud"
+            {{- range $arg := CloudControllerConfigArgv }}
+            - "{{ $arg }}"
+            {{- end }}
           resources:
             requests:
               cpu: 100m
@@ -92,3 +91,4 @@ spec:
                 secretKeyRef:
                   name: hcloud
                   key: network
+      priorityClassName: system-cluster-critical

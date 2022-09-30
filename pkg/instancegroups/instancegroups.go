@@ -105,26 +105,6 @@ func (c *RollingUpdateCluster) rollingUpdateInstanceGroup(group *cloudinstances.
 		}
 	}
 
-	settings := resolveSettings(c.Cluster, group.InstanceGroup, numInstances)
-
-	runningDrains := 0
-	maxSurge := settings.MaxSurge.IntValue()
-	if maxSurge > len(update) {
-		maxSurge = len(update)
-	}
-	maxConcurrency := maxSurge + settings.MaxUnavailable.IntValue()
-
-	if group.InstanceGroup.Spec.Role == api.InstanceGroupRoleMaster && maxSurge != 0 {
-		// Masters are incapable of surging because they rely on registering themselves through
-		// the local apiserver. That apiserver depends on the local etcd, which relies on being
-		// joined to the etcd cluster.
-		maxSurge = 0
-		maxConcurrency = settings.MaxUnavailable.IntValue()
-		if maxConcurrency == 0 {
-			maxConcurrency = 1
-		}
-	}
-
 	nonWarmPool := []*cloudinstances.CloudInstance{}
 	// Run through the warm pool and delete all instances directly
 	for _, instance := range update {
@@ -139,6 +119,28 @@ func (c *RollingUpdateCluster) rollingUpdateInstanceGroup(group *cloudinstances.
 		}
 	}
 	update = nonWarmPool
+
+	settings := resolveSettings(c.Cluster, group.InstanceGroup, numInstances)
+
+	runningDrains := 0
+	maxSurge := settings.MaxSurge.IntValue()
+
+	if maxSurge > len(update) {
+		maxSurge = len(update)
+	}
+
+	maxConcurrency := maxSurge + settings.MaxUnavailable.IntValue()
+
+	if group.InstanceGroup.Spec.Role == api.InstanceGroupRoleMaster && maxSurge != 0 {
+		// Masters are incapable of surging because they rely on registering themselves through
+		// the local apiserver. That apiserver depends on the local etcd, which relies on being
+		// joined to the etcd cluster.
+		maxSurge = 0
+		maxConcurrency = settings.MaxUnavailable.IntValue()
+		if maxConcurrency == 0 {
+			maxConcurrency = 1
+		}
+	}
 
 	if c.Interactive {
 		if maxSurge > 1 {
@@ -645,8 +647,22 @@ func (c *RollingUpdateCluster) drainNode(u *cloudinstances.CloudInstance) error 
 		return fmt.Errorf("error excluding node from load balancer: %v", err)
 	}
 
-	if err := c.Cloud.DeregisterInstance(u); err != nil {
-		return fmt.Errorf("error deregistering instance %q, node %q: %v", u.ID, u.Node.Name, err)
+	shouldDeregister := true
+	if !c.Options.DeregisterControlPlaneNodes {
+		if u.CloudInstanceGroup != nil && u.CloudInstanceGroup.InstanceGroup != nil {
+			role := u.CloudInstanceGroup.InstanceGroup.Spec.Role
+			switch role {
+			case api.InstanceGroupRoleAPIServer, api.InstanceGroupRoleMaster:
+				klog.Infof("skipping deregistration of instance %q, as part of instancegroup with role %q", u.ID, role)
+				shouldDeregister = false
+			}
+		}
+	}
+
+	if shouldDeregister {
+		if err := c.Cloud.DeregisterInstance(u); err != nil {
+			return fmt.Errorf("error deregistering instance %q, node %q: %w", u.ID, u.Node.Name, err)
+		}
 	}
 
 	if err := drain.RunNodeDrain(helper, u.Node.Name); err != nil {

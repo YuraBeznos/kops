@@ -673,6 +673,8 @@ type CloudControllerManagerConfig struct {
 	CloudProvider string `json:"cloudProvider,omitempty" flag:"cloud-provider"`
 	// ClusterName is the instance prefix for the cluster.
 	ClusterName string `json:"clusterName,omitempty" flag:"cluster-name"`
+	// Allow the cluster to run without the cluster-id on cloud instances
+	AllowUntaggedCloud *bool `json:"allowUntaggedCloud,omitempty" flag:"allow-untagged-cloud"`
 	// ClusterCIDR is CIDR Range for Pods in cluster.
 	ClusterCIDR string `json:"clusterCIDR,omitempty" flag:"cluster-cidr"`
 	// AllocateNodeCIDRs enables CIDRs for Pods to be allocated and, if
@@ -806,6 +808,9 @@ type OpenstackRouter struct {
 // OpenstackNetwork defines the config for a network
 type OpenstackNetwork struct {
 	AvailabilityZoneHints []*string `json:"availabilityZoneHints,omitempty"`
+	IPv6SupportDisabled   *bool     `json:"ipv6SupportDisabled,omitempty"`
+	PublicNetworkNames    []*string `json:"publicNetworkNames,omitempty"`
+	InternalNetworkNames  []*string `json:"internalNetworkNames,omitempty"`
 }
 
 // OpenstackMetadata defines config for metadata service related settings
@@ -906,6 +911,10 @@ type AWSEBSCSIDriver struct {
 	// Default: false
 	Enabled *bool `json:"enabled,omitempty"`
 
+	// Managed controls if aws-ebs-csi-driver is manged and deployed by kOps.
+	// The deployment of aws-ebs-csi-driver is skipped if this is set to false.
+	Managed *bool `json:"managed,omitempty"`
+
 	// Version is the container image tag used.
 	// Default: The latest stable release which is compatible with your Kubernetes version
 	Version *string `json:"version,omitempty"`
@@ -954,9 +963,11 @@ type NodeTerminationHandlerConfig struct {
 	EnableRebalanceDraining *bool `json:"enableRebalanceDraining,omitempty"`
 
 	// EnablePrometheusMetrics enables the "/metrics" endpoint.
+	// Default: false
 	EnablePrometheusMetrics *bool `json:"prometheusEnable,omitempty"`
 
 	// EnableSQSTerminationDraining enables queue-processor mode which drains nodes when an SQS termination event is received.
+	// Default: false
 	EnableSQSTerminationDraining *bool `json:"enableSQSTerminationDraining,omitempty"`
 
 	// ExcludeFromLoadBalancers makes node termination handler will mark for exclusion from load balancers before node are cordoned.
@@ -964,6 +975,8 @@ type NodeTerminationHandlerConfig struct {
 	ExcludeFromLoadBalancers *bool `json:"excludeFromLoadBalancers,omitempty"`
 
 	// ManagedASGTag is the tag used to determine which nodes NTH can take action on
+	// This field has kept its name even though it now maps to the --managed-tag flag due to keeping the API stable.
+	// Node termination handler does no longer check the ASG for this tag, but the actual EC2 instances.
 	ManagedASGTag *string `json:"managedASGTag,omitempty"`
 
 	// MemoryRequest of NodeTerminationHandler container.
@@ -1030,6 +1043,9 @@ type ClusterAutoscalerConfig struct {
 	// ScaleDownDelayAfterAdd determines the time after scale up that scale down evaluation resumes
 	// Default: 10m0s
 	ScaleDownDelayAfterAdd *string `json:"scaleDownDelayAfterAdd,omitempty"`
+	// CordonNodeBeforeTerminating should CA cordon nodes before terminating during downscale process
+	// Default: false
+	CordonNodeBeforeTerminating *bool `json:"cordonNodeBeforeTerminating,omitempty"`
 	// Image is the docker container used.
 	// Default: the latest supported image for the specified kubernetes version.
 	Image *string `json:"image,omitempty"`
@@ -1080,6 +1096,9 @@ type CertManagerConfig struct {
 	// nameservers is a list of nameserver IP addresses to use instead of the pod defaults.
 	// Default: none
 	Nameservers []string `json:"nameservers,omitempty"`
+
+	// HostedZoneIDs is a list of route53 hostedzone IDs that cert-manager will be allowed to do dns-01 validation for
+	HostedZoneIDs []string `json:"hostedZoneIDs,omitempty"`
 }
 
 // AWSLoadBalancerControllerConfig determines the AWS LB controller configuration.
